@@ -7,6 +7,7 @@ import type {
 import {
   calculateMonthlyWorkingDays,
   formatMonthKey,
+  HOLIDAY_SOURCE_VERSION,
   serializeWeeklySchedule,
   shouldRemeasureMonth,
 } from '../domains/office/officeEngine';
@@ -71,6 +72,7 @@ export function buildInstantMonthMeasurement(
     holidays: monthHolidays,
     weeklyScheduleHash: serializeWeeklySchedule(schedule),
     measuredAt: nowMs,
+    holidaySourceVersion: HOLIDAY_SOURCE_VERSION,
   };
 }
 

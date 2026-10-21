@@ -12,6 +12,9 @@ import type {
 } from './types';
 import { WEEKDAY_ORDER } from './types';
 
+/** Bump when the built-in holiday list changes so cached months are re-measured. */
+export const HOLIDAY_SOURCE_VERSION = 3;
+
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function createDefaultWeeklySchedule(): Record<WeekdayKey, WeekdaySettingState> {
@@ -63,6 +66,7 @@ export function shouldRemeasureMonth(
   nowMs: number
 ): boolean {
   if (!cache) return true;
+  if ((cache.holidaySourceVersion ?? 0) < HOLIDAY_SOURCE_VERSION) return true;
   if (cache.weeklyScheduleHash !== serializeWeeklySchedule(currentSchedule)) return true;
   if (nowMs - cache.measuredAt > THIRTY_DAYS_MS) return true;
   return false;
@@ -156,8 +160,10 @@ export function buildMonthCalendarDays(
   profile: EmployeeProfile,
   holidays: HolidayItem[],
   dayLogs: DayLogMap,
-  todayStr: string
+  todayStr: string,
+  lockdownDates: readonly string[] = []
 ): CalendarDayCell[] {
+  const lockdown = new Set(lockdownDates);
   const totalDays = getDaysInMonthCount(year, month);
   const holidayMap = new Map<string, HolidayItem>();
   for (const h of holidays) {
@@ -204,7 +210,10 @@ export function buildMonthCalendarDays(
       continue;
     }
 
-    const rawOverride = dayLogs[dateStr];
+    const isLockdown = lockdown.has(dateStr);
+    let rawOverride = dayLogs[dateStr];
+    // Office closed: only leave or remote is possible.
+    if (isLockdown && (rawOverride === 'office' || rawOverride === 'planned')) rawOverride = 'work';
     // Planned days that were never confirmed fall back to remote once the day has passed.
     // Legacy future 'office' entries count as planned.
     const isUpcoming = dateStr > todayStr;
@@ -225,6 +234,7 @@ export function buildMonthCalendarDays(
         isPlanned: false,
         isUpcoming,
         isPriorityDay,
+        isLockdown,
       });
     } else if (override === 'office' || override === 'planned') {
       cells.push({
@@ -237,6 +247,7 @@ export function buildMonthCalendarDays(
         isPlanned: planned,
         isUpcoming,
         isPriorityDay,
+        isLockdown,
       });
     } else {
       cells.push({
@@ -249,6 +260,7 @@ export function buildMonthCalendarDays(
         isPlanned: false,
         isUpcoming,
         isPriorityDay,
+        isLockdown,
       });
     }
   }
@@ -263,9 +275,10 @@ export function calculateMonthlyProgress(
   measuredWorkingDays: number,
   holidays: HolidayItem[],
   dayLogs: DayLogMap,
-  todayStr: string
+  todayStr: string,
+  lockdownDates: readonly string[] = []
 ): MonthlyProgressMetrics {
-  const cells = buildMonthCalendarDays(year, month, profile, holidays, dayLogs, todayStr);
+  const cells = buildMonthCalendarDays(year, month, profile, holidays, dayLogs, todayStr, lockdownDates);
 
   const leaveDaysCount = cells.filter((c) => c.effectiveState === 'leave').length;
   const effectiveWorkingDays = Math.max(0, measuredWorkingDays - leaveDaysCount);
@@ -276,7 +289,7 @@ export function calculateMonthlyProgress(
 
   const remainingRequiredDays = Math.max(0, requiredOfficeDays - attendedOfficeDays);
   const remainingWorkingDaysInMonth = cells.filter(
-    (c) => c.isEditable && c.dateStr >= todayStr && c.effectiveState !== 'leave' && !(c.dateStr === todayStr && c.effectiveState === 'office' && !c.isPlanned)
+    (c) => c.isEditable && !c.isLockdown && c.dateStr >= todayStr && c.effectiveState !== 'leave' && !(c.dateStr === todayStr && c.effectiveState === 'office' && !c.isPlanned)
   ).length;
 
   const [tYear, tMonth, tDay] = todayStr.split('-').map(Number);
@@ -321,6 +334,7 @@ export function planOfficeDays(
   const candidates = cells.filter(
     (c) =>
       c.isEditable &&
+      !c.isLockdown &&
       c.dateStr >= todayStr &&
       c.effectiveState !== 'leave' &&
       !(c.effectiveState === 'office' && !c.isPlanned)
@@ -362,4 +376,20 @@ export function cycleDayStatus(
   }
   if (current === 'work') return 'planned';
   return current === 'planned' ? 'leave' : 'work';
+}
+
+/** Locked day cycle: only leave <-> remote work. */
+export function cycleLockdownDayStatus(current: EditableDayStatus): EditableDayStatus {
+  return current === 'leave' ? 'work' : 'leave';
+}
+
+/** Adds dates (never in the past) to the sorted, de-duplicated lockdown list. */
+export function addLockdownDates(
+  existing: readonly string[],
+  toAdd: readonly string[],
+  todayStr: string
+): string[] {
+  const set = new Set(existing);
+  for (const d of toAdd) if (d >= todayStr) set.add(d);
+  return Array.from(set).sort();
 }

@@ -1,8 +1,23 @@
 import type { HolidayItem } from './types';
 
+export interface HolidayData {
+  years: number[];
+  holidays: HolidayItem[];
+}
+
 /**
- * Built-in Vietnam Public Holidays (Solar + Lunar converted for 2024–2030)
- * Ensures 100% accurate offline holiday subtraction for Vietnamese employees.
+ * Per-year holiday plan (Tết, bridge days, new holidays like 24/11) downloaded from
+ * `holidays/vn.json` and cached locally by holidayDataService. Lives outside the bundle so
+ * it can be refreshed without a rebuild; years it does not cover use the fallback table below.
+ */
+let holidayData: HolidayData | null = null;
+
+export function setHolidayData(data: HolidayData | null): void {
+  holidayData = data;
+}
+
+/**
+ * Fallback table (Solar + Lunar), used only for years missing from the downloaded plan.
  */
 const LUNAR_HOLIDAYS_BY_YEAR: Record<number, Array<{ mmdd: string; nameVi: string; nameEn: string }>> = {
   2024: [
@@ -46,6 +61,11 @@ const LUNAR_HOLIDAYS_BY_YEAR: Record<number, Array<{ mmdd: string; nameVi: strin
 };
 
 export function getBuiltInVietnamHolidays(year: number): HolidayItem[] {
+  if (holidayData?.years.includes(year)) {
+    return holidayData.holidays.filter((h) => h.date.startsWith(`${year}-`));
+  }
+
+  // Fallback for years outside the snapshot: fixed solar + hand-maintained lunar table
   const fixedSolar: Array<{ mmdd: string; nameVi: string; nameEn: string }> = [
     { mmdd: '01-01', nameVi: 'Tết Dương lịch', nameEn: 'New Year Day' },
     { mmdd: '04-30', nameVi: 'Ngày Giải phóng miền Nam', nameEn: 'Reunification Day' },

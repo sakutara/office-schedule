@@ -7,7 +7,7 @@ import type {
   WeekdayKey,
 } from '../domains/office/types';
 import { WEEKDAY_ORDER } from '../domains/office/types';
-import { cycleDayStatus, formatMonthKey, planOfficeDays, type PlanStrategy } from '../domains/office/officeEngine';
+import { cycleDayStatus, cycleLockdownDayStatus, formatMonthKey, planOfficeDays, type PlanStrategy } from '../domains/office/officeEngine';
 import type { LanguageCode, TranslationDictionary } from '../domains/i18n';
 import { formatMessage } from '../domains/i18n';
 
@@ -18,7 +18,7 @@ interface CalendarTabProps {
   cells: CalendarDayCell[];
   metrics: MonthlyProgressMetrics;
   onSetDayStatus: (dateStr: string, status: EditableDayStatus) => void;
-  onForceRemeasure: () => void;
+  onForceRemeasure: () => void | Promise<void>;
   onApplyDayStatuses: (updates: Record<string, EditableDayStatus>) => void;
   todayStr: string;
   language: LanguageCode;
@@ -230,7 +230,9 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                     : (cell.effectiveState as EditableDayStatus);
                   onSetDayStatus(
                     cell.dateStr,
-                    cycleDayStatus(current, cell.dateStr, todayStr)
+                    cell.isLockdown
+                      ? cycleLockdownDayStatus(current)
+                      : cycleDayStatus(current, cell.dateStr, todayStr)
                   );
                 }}
                 className={`h-11 rounded-lg border text-xs flex items-center justify-center transition-colors ${

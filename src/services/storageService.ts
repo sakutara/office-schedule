@@ -11,6 +11,7 @@ export function createInitialAppState(): AppPersistedState {
     activeProfileId: profiles[0].id,
     dayLogs: {},
     monthlyCache: {},
+    lockdownDates: [],
   };
 }
 
@@ -35,6 +36,7 @@ export function loadAppState(): AppPersistedState {
       activeProfileId,
       dayLogs: parsed.dayLogs ?? {},
       monthlyCache: parsed.monthlyCache ?? {},
+      lockdownDates: Array.isArray(parsed.lockdownDates) ? parsed.lockdownDates : [],
     };
   } catch {
     return createInitialAppState();

@@ -15,6 +15,7 @@ import type {
 import {
   buildMonthCalendarDays,
   calculateMonthlyProgress,
+  addLockdownDates,
   cycleWeekdayState,
   formatDateStr,
   formatMonthKey,
@@ -22,6 +23,7 @@ import {
 } from './domains/office/officeEngine';
 import { getVpReminderReasons, isVpReminderDue } from './domains/office/vpReminder';
 import { loadAppState, saveAppState } from './services/storageService';
+import { applyStoredHolidayData, syncHolidayData } from './services/holidayDataService';
 import {
   buildInstantMonthMeasurement,
   ensureMonthMeasurement,
@@ -57,7 +59,10 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
   const todayStr = initialTodayStr ?? getSystemTodayStr();
   const [initYear, initMonth] = todayStr.split('-').map(Number);
 
-  const [state, setState] = useState<AppPersistedState>(() => loadAppState());
+  const [state, setState] = useState<AppPersistedState>(() => {
+    applyStoredHolidayData();
+    return loadAppState();
+  });
   const [activeTab, setActiveTab] = useState<TabKey>('main');
   const [selectedYear, setSelectedYear] = useState<number>(initYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(initMonth);
@@ -142,7 +147,13 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
         ? buildInstantMonthMeasurement(todayYear, todayMonth, activeProfile.weeklySchedule, nowMs)
         : cached;
 
-      const reasons = getVpReminderReasons(activeProfile, measurement, state.dayLogs, todayStr);
+      const reasons = getVpReminderReasons(
+        activeProfile,
+        measurement,
+        state.dayLogs,
+        todayStr,
+        state.lockdownDates
+      );
       if (reasons.length === 0) return;
 
       const body =
@@ -164,7 +175,7 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [todayStr, state.dayLogs, state.monthlyCache, activeProfile, state.language]);
+  }, [todayStr, state.dayLogs, state.lockdownDates, state.monthlyCache, activeProfile, state.language]);
 
   const handleToggleVpReminder = async () => {
     const next = vpReminderStatus === 'on' ? disableVpReminder() : await enableVpReminder();
@@ -179,7 +190,8 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
         activeProfile,
         currentMonthCache.holidays,
         state.dayLogs,
-        todayStr
+        todayStr,
+        state.lockdownDates
       ),
     [
       selectedYear,
@@ -188,6 +200,7 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
       currentMonthCache.holidays,
       state.dayLogs,
       todayStr,
+      state.lockdownDates,
     ]
   );
 
@@ -200,7 +213,8 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
         currentMonthCache.workingDaysCount,
         currentMonthCache.holidays,
         state.dayLogs,
-        todayStr
+        todayStr,
+        state.lockdownDates
       ),
     [
       selectedYear,
@@ -210,6 +224,7 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
       currentMonthCache.holidays,
       state.dayLogs,
       todayStr,
+      state.lockdownDates,
     ]
   );
 
@@ -222,12 +237,34 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
   };
 
   const handleSetDayStatus = (dateStr: string, status: EditableDayStatus) => {
+    updateStateAndPersist((prev) => {
+      // Office closed: a lockdown day can only be leave or remote.
+      const locked = prev.lockdownDates.includes(dateStr);
+      const next: EditableDayStatus =
+        locked && (status === 'office' || status === 'planned') ? 'work' : status;
+      return { ...prev, dayLogs: { ...prev.dayLogs, [dateStr]: next } };
+    });
+  };
+
+  const handleAddLockdownDates = (dates: string[]) => {
+    updateStateAndPersist((prev) => {
+      const fresh = dates.filter((d) => d >= todayStr && !prev.lockdownDates.includes(d));
+      if (fresh.length === 0) return prev;
+      const leave: Record<string, EditableDayStatus> = {};
+      for (const d of fresh) leave[d] = 'leave';
+      return {
+        ...prev,
+        lockdownDates: addLockdownDates(prev.lockdownDates, fresh, todayStr),
+        dayLogs: { ...prev.dayLogs, ...leave },
+      };
+    });
+  };
+
+  const handleRemoveLockdownDate = (dateStr: string) => {
     updateStateAndPersist((prev) => ({
       ...prev,
-      dayLogs: {
-        ...prev.dayLogs,
-        [dateStr]: status,
-      },
+      lockdownDates: prev.lockdownDates.filter((d) => d !== dateStr),
+      dayLogs: { ...prev.dayLogs, [dateStr]: 'work' },
     }));
   };
 
@@ -272,21 +309,34 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
     }));
   };
 
-  const handleForceRemeasure = () => {
-    const fresh = buildInstantMonthMeasurement(
-      selectedYear,
-      selectedMonth,
-      activeProfile.weeklySchedule,
-      Date.now()
-    );
+  // Re-downloads the holiday plan file; every cached month is then measured again.
+  const remeasureAllMonths = (includeSelected: boolean) => {
+    const fresh = includeSelected
+      ? buildInstantMonthMeasurement(
+          selectedYear,
+          selectedMonth,
+          activeProfile.weeklySchedule,
+          Date.now()
+        )
+      : undefined;
     updateStateAndPersist((prev) => ({
       ...prev,
-      monthlyCache: {
-        ...prev.monthlyCache,
-        [fresh.monthKey]: fresh,
-      },
+      monthlyCache: fresh ? { [fresh.monthKey]: fresh } : {},
     }));
   };
+
+  const handleForceRemeasure = async () => {
+    await syncHolidayData();
+    remeasureAllMonths(true);
+  };
+
+  // Silent sync on startup: picks up a newly published holiday plan without user action.
+  useEffect(() => {
+    void syncHolidayData().then((changed) => {
+      if (changed) remeasureAllMonths(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSwipeEnd = (endPoint: SwipePoint) => {
     if (!swipeStartRef.current) return;
@@ -407,6 +457,9 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
             onCreateProfile={handleCreateProfile}
             vpReminderStatus={vpReminderStatus}
             onToggleVpReminder={handleToggleVpReminder}
+            lockdownDates={state.lockdownDates}
+            onAddLockdownDates={handleAddLockdownDates}
+            onRemoveLockdownDate={handleRemoveLockdownDate}
             todayStr={todayStr}
             language={state.language}
             t={t}

@@ -29,7 +29,8 @@ export function getVpReminderReasons(
   profile: EmployeeProfile,
   measurement: MonthMeasurementInput,
   dayLogs: DayLogMap,
-  todayStr: string
+  todayStr: string,
+  lockdownDates: readonly string[] = []
 ): VpReminderReason[] {
   const [year, month] = todayStr.split('-').map(Number);
   const cells = buildMonthCalendarDays(
@@ -38,7 +39,8 @@ export function getVpReminderReasons(
     profile,
     measurement.holidays,
     dayLogs,
-    todayStr
+    todayStr,
+    lockdownDates
   );
   const metrics = calculateMonthlyProgress(
     year,
@@ -47,13 +49,14 @@ export function getVpReminderReasons(
     measurement.workingDaysCount,
     measurement.holidays,
     dayLogs,
-    todayStr
+    todayStr,
+    lockdownDates
   );
   const today = cells.find((c) => c.dateStr === todayStr);
 
   // Only remind on days that can actually go to the office: an editable day that is either
   // still open ('work') or planned. Weekends, holidays, leave and confirmed office days are silent.
-  const canGoToOffice = !!today && today.isEditable && (today.effectiveState === 'work' || today.isPlanned);
+  const canGoToOffice = !!today && today.isEditable && !today.isLockdown && (today.effectiveState === 'work' || today.isPlanned);
   if (!today || !canGoToOffice) return [];
 
   const reasons: VpReminderReason[] = [];

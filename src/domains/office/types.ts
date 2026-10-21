@@ -43,6 +43,7 @@ export interface MonthlyMeasurementCache {
   holidays: HolidayItem[];
   weeklyScheduleHash: string;
   measuredAt: number; // epoch ms
+  holidaySourceVersion?: number; // bump HOLIDAY_SOURCE_VERSION to force re-measure
 }
 
 /** 'planned' = dự kiến lên VP; becomes remote ('work') once its day has passed unconfirmed. */
@@ -61,6 +62,7 @@ export interface CalendarDayCell {
   isEditable: boolean;
   isPlanned: boolean;
   isUpcoming: boolean; // editable day after today
+  isLockdown?: boolean; // office closed: cannot be office/planned
   isPriorityDay: boolean;
   holidayNameVi?: string;
   holidayNameEn?: string;
@@ -93,4 +95,6 @@ export interface AppPersistedState {
   activeProfileId: string;
   dayLogs: DayLogMap;
   monthlyCache: Record<string, MonthlyMeasurementCache>;
+  /** Office lockdown: 'YYYY-MM-DD' dates the office is closed (leave by default, remote at most). */
+  lockdownDates: string[];
 }

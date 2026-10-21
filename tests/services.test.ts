@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadAppState, saveAppState } from '../src/services/storageService';
 import { ensureMonthMeasurement, fetchVietnamHolidaysForYear } from '../src/services/holidayService';
+import { applyStoredHolidayData, syncHolidayData } from '../src/services/holidayDataService';
+import { getBuiltInVietnamHolidays, setHolidayData } from '../src/domains/office/vietnamHolidays';
 import { createDefaultWeeklySchedule } from '../src/domains/office/officeEngine';
 
 describe('Offline Storage & Holiday Query/Cache Services', () => {
@@ -109,5 +111,38 @@ describe('Offline Storage & Holiday Query/Cache Services', () => {
     );
     expect(res3.didRemeasure).toBe(true);
     expect(failingFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('syncs the external holiday file, persists it, and reuses it offline', async () => {
+    setHolidayData(null);
+    expect(getBuiltInVietnamHolidays(2026).some((h) => h.date === '2026-11-24')).toBe(false);
+
+    const file = { years: [2026], holidays: [{ date: '2026-11-24', nameVi: 'Văn hoá', nameEn: 'Culture' }] };
+    const okFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => file });
+    expect(await syncHolidayData(okFetch as unknown as typeof fetch)).toBe(true);
+    expect(getBuiltInVietnamHolidays(2026)).toEqual(file.holidays);
+    expect(await syncHolidayData(okFetch as unknown as typeof fetch)).toBe(false); // unchanged
+
+    setHolidayData(null);
+    applyStoredHolidayData(); // restart while offline
+    expect(getBuiltInVietnamHolidays(2026)).toEqual(file.holidays);
+
+    const failing = vi.fn().mockRejectedValue(new Error('Offline'));
+    expect(await syncHolidayData(failing as unknown as typeof fetch)).toBe(false);
+    expect(getBuiltInVietnamHolidays(2026)).toEqual(file.holidays); // keeps last good data
+    setHolidayData(null);
+  });
+
+  it('falls back to the same-origin holiday file when GitHub raw is unreachable', async () => {
+    setHolidayData(null);
+    const file = { years: [2030], holidays: [{ date: '2030-01-01', nameVi: 'a', nameEn: 'b' }] };
+    const mock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('blocked'))
+      .mockResolvedValueOnce({ ok: true, json: async () => file });
+    expect(await syncHolidayData(mock as unknown as typeof fetch)).toBe(true);
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(String(mock.mock.calls[0][0])).toContain('raw.githubusercontent.com/sakutara/office-schedule');
+    setHolidayData(null);
   });
 });
