@@ -17,6 +17,7 @@ export const TopProgressBar: React.FC<TopProgressBarProps> = ({ metrics, t, comp
   // Segments never exceed the required days; any surplus is not shown.
   const total = metrics.requiredOfficeDays;
   const attended = Math.min(metrics.attendedOfficeDays, total);
+  // The number shown is the real count, even when it exceeds the segment total.
   const planned = Math.min(metrics.plannedOfficeDays, total - attended);
 
   return (
@@ -32,7 +33,7 @@ export const TopProgressBar: React.FC<TopProgressBarProps> = ({ metrics, t, comp
         className="mb-1.5 text-xs font-semibold text-slate-200"
       >
         {formatMessage(t.progressSummary, {
-          x: attended,
+          x: metrics.attendedOfficeDays,
           y: metrics.requiredOfficeDays,
         })}
       </div>
