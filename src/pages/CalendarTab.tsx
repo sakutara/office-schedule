@@ -197,6 +197,33 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
         </div>
       )}
 
+      {/* Planning buttons: distribute remaining required days */}
+      <div className="flex flex-col gap-1">
+      <div className="text-[11px] font-semibold text-slate-400">
+        {t.quickAssignLabel}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {(
+          [
+            ['priority', t.planPriorityBtn],
+            ['start', t.planStartBtn],
+            ['end', t.planEndBtn],
+          ] as [PlanStrategy, string][]
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            data-testid={`plan-${key}`}
+            onClick={() => handlePlan(key)}
+            className="py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 hover:bg-emerald-500/30"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      </div>
+
       {/* 7-Column Monthly Grid */}
       <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-2">
         <div className="grid grid-cols-7 gap-1 mb-1 text-center text-[11px] font-semibold text-slate-400">
@@ -266,38 +293,11 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
         </span>
       </div>
 
-      {/* Planning buttons: distribute remaining required days */}
-      <div className="mt-auto flex flex-col gap-1">
-      <div className="text-[11px] font-semibold text-slate-400">
-        {t.quickAssignLabel}
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        {(
-          [
-            ['priority', t.planPriorityBtn],
-            ['start', t.planStartBtn],
-            ['end', t.planEndBtn],
-          ] as [PlanStrategy, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            data-testid={`plan-${key}`}
-            onClick={() => handlePlan(key)}
-            className="py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 hover:bg-emerald-500/30"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      </div>
-
       <button
         type="button"
         data-testid="btn-force-remeasure"
         onClick={onForceRemeasure}
-        className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200"
+        className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200"
       >
         <RefreshCw className="w-3.5 h-3.5" />
         <span>{t.remeasureNowBtn}</span>

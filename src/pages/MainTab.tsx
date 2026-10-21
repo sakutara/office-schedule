@@ -1,5 +1,6 @@
 import React from 'react';
 import { Building2, CalendarOff, CalendarCheck, Sparkles, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { getUpcomingWindowEnd } from '../domains/office/vietnamHolidays';
 import type {
   CalendarDayCell,
   EditableDayStatus,
@@ -23,7 +24,7 @@ export const MainTab: React.FC<MainTabProps> = ({
   todayStr,
   metrics,
   monthCells,
-  upcomingOffDays,
+  upcomingOffDays: allOffDays,
   language,
   todayStatus,
   onSetDayStatus,
@@ -75,6 +76,10 @@ export const MainTab: React.FC<MainTabProps> = ({
       : 'work'
     : todayStatus;
 
+  // Off days (lockdown, holidays, leave) from today to two months ahead, max 10
+  const windowEnd = getUpcomingWindowEnd(todayStr);
+  const upcomingOffDays = allOffDays.filter((c) => c.date <= windowEnd).slice(0, 10);
+
   const infoRows: [string, number, string][] = [
     ['info-attended', metrics.attendedOfficeDays, t.infoAttended],
     ['info-planned', metrics.plannedOfficeDays, t.infoPlanned],
@@ -85,7 +90,7 @@ export const MainTab: React.FC<MainTabProps> = ({
   return (
     <div
       data-testid="main-tab"
-      className="flex-1 flex flex-col gap-3 px-4 py-3 overflow-y-auto"
+      className="flex-1 min-h-0 flex flex-col gap-3 px-4 py-3 overflow-hidden"
     >
       <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2 text-xs">
         <span className="text-slate-400">{t.todayDateLabel}: </span>
@@ -147,7 +152,7 @@ export const MainTab: React.FC<MainTabProps> = ({
 
           <div
             data-testid="info-panel"
-            className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-sm"
+            className="min-h-0 flex flex-col bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-sm"
           >
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
               {infoRows.map(([id, value, label]) => (
@@ -160,14 +165,14 @@ export const MainTab: React.FC<MainTabProps> = ({
               ))}
             </dl>
 
-            <div className="mt-3 pt-2 border-t border-slate-800">
-              <div className="text-xs text-slate-400 mb-1">{t.infoUpcomingOff}</div>
+            <div className="mt-3 pt-2 border-t border-slate-800 min-h-0 flex flex-col">
+              <div className="text-xs text-slate-400 mb-1 shrink-0">{t.infoUpcomingOff}</div>
               {upcomingOffDays.length === 0 ? (
                 <div data-testid="info-no-off" className="text-xs text-slate-500">
                   {t.noUpcomingOff}
                 </div>
               ) : (
-                <ul data-testid="info-upcoming-off" className="flex flex-col gap-1">
+                <ul data-testid="info-upcoming-off" className="flex flex-col gap-1 min-h-0 overflow-y-auto">
                   {upcomingOffDays.map((c) => (
                     <li
                       key={c.date}

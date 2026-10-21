@@ -124,14 +124,14 @@ describe('VP reminder toggle in Settings', () => {
     fireEvent.click(screen.getByTestId('tab-btn-settings'));
 
     const toggle = screen.getByTestId('btn-toggle-vp-reminder');
-    expect(toggle).toHaveTextContent('Bật nhắc lên VP');
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
     await act(async () => {
       fireEvent.click(toggle);
     });
 
     expect(FakeNotification.requestPermission).toHaveBeenCalledOnce();
-    expect(screen.getByTestId('btn-toggle-vp-reminder')).toHaveTextContent('Đang bật');
+    expect(screen.getByTestId('btn-toggle-vp-reminder')).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem(ENABLED_KEY)).toBe('1');
   });
 
@@ -168,7 +168,7 @@ describe('VP reminder toggle in Settings', () => {
       fireEvent.click(screen.getByTestId('btn-toggle-vp-reminder'));
     });
 
-    expect(screen.getByTestId('btn-toggle-vp-reminder')).toHaveTextContent('Bật nhắc lên VP');
+    expect(screen.getByTestId('btn-toggle-vp-reminder')).toHaveAttribute('aria-pressed', 'false');
     expect(localStorage.getItem(ENABLED_KEY)).toBe('0');
   });
 });

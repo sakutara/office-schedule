@@ -89,3 +89,24 @@ export function getBuiltInVietnamHolidays(year: number): HolidayItem[] {
 
   return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/** Last day (inclusive) of the "upcoming" window: same day-of-month, `months` ahead. */
+export function getUpcomingWindowEnd(todayStr: string, months = 2): string {
+  const d = new Date(Number(todayStr.slice(0, 4)), Number(todayStr.slice(5, 7)) - 1 + months, Number(todayStr.slice(8, 10)));
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/** Holidays from today up to two months ahead, at most `max` items. */
+export function getUpcomingHolidays(todayStr: string, months = 2, max = 10): HolidayItem[] {
+  const end = getUpcomingWindowEnd(todayStr, months);
+  const startYear = Number(todayStr.slice(0, 4));
+  const endYear = Number(end.slice(0, 4));
+  const all: HolidayItem[] = [];
+  for (let y = startYear; y <= endYear; y++) all.push(...getBuiltInVietnamHolidays(y));
+  return all
+    .filter((h) => h.date >= todayStr && h.date <= end)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, max);
+}
