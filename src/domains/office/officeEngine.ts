@@ -393,3 +393,40 @@ export function addLockdownDates(
   for (const d of toAdd) if (d >= todayStr) set.add(d);
   return Array.from(set).sort();
 }
+
+export interface UpcomingOffDay {
+  date: string; // 'YYYY-MM-DD'
+  kind: 'holiday' | 'leave' | 'lockdown';
+  nameVi?: string;
+  nameEn?: string;
+}
+
+/**
+ * Every upcoming day (today onward, any month) the user will not be in the office:
+ * lockdown days, public holidays and leave days. One entry per date, lockdown first,
+ * then holiday, then leave. Leave on a weekly off day is not a real leave day.
+ */
+export function listUpcomingOffDays(
+  todayStr: string,
+  schedule: Record<WeekdayKey, WeekdaySettingState>,
+  dayLogs: DayLogMap,
+  lockdownDates: readonly string[],
+  holidays: readonly HolidayItem[]
+): UpcomingOffDay[] {
+  const byDate = new Map<string, UpcomingOffDay>();
+  for (const d of lockdownDates) {
+    if (d >= todayStr) byDate.set(d, { date: d, kind: 'lockdown' });
+  }
+  for (const h of holidays) {
+    if (h.date >= todayStr && !byDate.has(h.date)) {
+      byDate.set(h.date, { date: h.date, kind: 'holiday', nameVi: h.nameVi, nameEn: h.nameEn });
+    }
+  }
+  for (const [date, status] of Object.entries(dayLogs)) {
+    if (status !== 'leave' || date < todayStr || byDate.has(date)) continue;
+    const [y, m, d] = date.split('-').map(Number);
+    if (schedule[getWeekdayKeyFromDate(new Date(y, m - 1, d))] === 'off') continue;
+    byDate.set(date, { date, kind: 'leave' });
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}

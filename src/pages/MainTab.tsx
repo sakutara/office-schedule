@@ -5,12 +5,14 @@ import type {
   EditableDayStatus,
   MonthlyProgressMetrics,
 } from '../domains/office/types';
+import type { UpcomingOffDay } from '../domains/office/officeEngine';
 import type { LanguageCode, TranslationDictionary } from '../domains/i18n';
 
 interface MainTabProps {
   todayStr: string;
   metrics: MonthlyProgressMetrics;
   monthCells: CalendarDayCell[];
+  upcomingOffDays: UpcomingOffDay[];
   language: LanguageCode;
   todayStatus: EditableDayStatus | undefined;
   onSetDayStatus: (dateStr: string, status: EditableDayStatus) => void;
@@ -21,6 +23,7 @@ export const MainTab: React.FC<MainTabProps> = ({
   todayStr,
   metrics,
   monthCells,
+  upcomingOffDays,
   language,
   todayStatus,
   onSetDayStatus,
@@ -71,12 +74,6 @@ export const MainTab: React.FC<MainTabProps> = ({
       ? 'leave'
       : 'work'
     : todayStatus;
-
-  const upcomingOffDays = monthCells
-    .filter(
-      (c) => (c.effectiveState === 'holiday' || c.effectiveState === 'leave') && c.dateStr >= todayStr
-    )
-    .slice(0, 10);
 
   const infoRows: [string, number, string][] = [
     ['info-attended', metrics.attendedOfficeDays, t.infoAttended],
@@ -172,16 +169,23 @@ export const MainTab: React.FC<MainTabProps> = ({
               ) : (
                 <ul data-testid="info-upcoming-off" className="flex flex-col gap-1">
                   {upcomingOffDays.map((c) => (
-                    <li key={c.dateStr} className="flex items-center justify-between text-xs">
+                    <li
+                      key={c.date}
+                      data-testid={`off-day-${c.date}`}
+                      data-kind={c.kind}
+                      className="flex items-center justify-between text-xs"
+                    >
                       <span className="text-slate-200">
-                        {c.dateStr.slice(8)}/{c.dateStr.slice(5, 7)}
+                        {c.date.slice(8)}/{c.date.slice(5, 7)}
                       </span>
                       <span className="text-slate-400 truncate ml-2">
-                        {c.effectiveState === 'leave'
-                          ? t.btnMarkLeave
-                          : language === 'vi'
-                            ? c.holidayNameVi
-                            : c.holidayNameEn}
+                        {c.kind === 'lockdown'
+                          ? t.lockdownTitle
+                          : c.kind === 'leave'
+                            ? t.btnMarkLeave
+                            : language === 'vi'
+                              ? c.nameVi
+                              : c.nameEn}
                       </span>
                     </li>
                   ))}

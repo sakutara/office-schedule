@@ -179,8 +179,15 @@ describe('Full App UI Integration Tests (MainTab, CalendarTab, SettingsTab, TopP
     await user.click(screen.getByTestId('tab-btn-settings'));
 
     await user.click(screen.getByTestId('btn-add-lockdown'));
-    expect(screen.getByTestId('lockdown-pick-2026-10-20')).toBeDisabled();
-    await user.click(screen.getByTestId('lockdown-pick-2026-10-22'));
+    expect(screen.getByTestId('lockdown-pick-2026-10-20')).toBeDisabled(); // past
+    expect(screen.getByTestId('lockdown-pick-2026-10-24')).toBeDisabled(); // Saturday
+    expect(screen.getByTestId('lockdown-pick-2026-10-25')).toBeDisabled(); // Sunday
+    const day22 = screen.getByTestId('lockdown-pick-2026-10-22');
+    expect(day22).toHaveAttribute('data-selected', 'false'); // yellow by default
+    expect(day22.className).toContain('bg-amber-200');
+    await user.click(day22);
+    expect(day22).toHaveAttribute('data-selected', 'true'); // gray when selected
+    expect(day22.className).toContain('bg-slate-500');
     await user.click(screen.getByTestId('lockdown-pick-2026-10-23'));
     await user.click(screen.getByTestId('btn-confirm-lockdown'));
     expect(screen.getByTestId('lockdown-item-2026-10-22')).toHaveTextContent('22/10');
@@ -215,6 +222,7 @@ describe('Full App UI Integration Tests (MainTab, CalendarTab, SettingsTab, TopP
     expect(screen.queryByTestId('btn-checkin-office')).not.toBeInTheDocument();
     expect(screen.queryByTestId('btn-mark-leave')).not.toBeInTheDocument();
     expect(screen.getByTestId('today-status-indicator')).toHaveAttribute('data-status', 'leave');
+    expect(screen.getByTestId('off-day-2026-10-21')).toHaveAttribute('data-kind', 'lockdown');
 
     // Turn it into remote from the calendar: still status only
     await user.click(screen.getByTestId('tab-btn-calendar'));
@@ -222,5 +230,29 @@ describe('Full App UI Integration Tests (MainTab, CalendarTab, SettingsTab, TopP
     await user.click(screen.getByTestId('tab-btn-main'));
     expect(screen.queryByTestId('btn-checkin-office')).not.toBeInTheDocument();
     expect(screen.getByTestId('today-status-indicator')).toHaveAttribute('data-status', 'work');
+  });
+});
+
+describe('Lockdown picker exclusions', () => {
+  it('blocks public holidays but still allows days already marked as leave', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'office_tracker_holiday_data_v1',
+      JSON.stringify({
+        years: [2026],
+        holidays: [{ date: '2026-11-24', nameVi: 'Ngày Văn hoá Việt Nam', nameEn: 'Culture Day' }],
+      })
+    );
+    render(<App initialTodayStr="2026-10-21" />);
+    await user.click(screen.getByTestId('tab-btn-calendar'));
+    await user.click(screen.getByTestId('cal-day-2026-10-22')); // work -> planned
+    await user.click(screen.getByTestId('cal-day-2026-10-22')); // planned -> leave
+    expect(screen.getByTestId('cal-day-2026-10-22')).toHaveAttribute('data-state', 'leave');
+
+    await user.click(screen.getByTestId('tab-btn-settings'));
+    await user.click(screen.getByTestId('btn-add-lockdown'));
+    expect(screen.getByTestId('lockdown-pick-2026-10-22')).not.toBeDisabled(); // leave stays selectable
+    await user.click(screen.getByTestId('lockdown-next-month'));
+    expect(screen.getByTestId('lockdown-pick-2026-11-24')).toBeDisabled(); // Culture Day
   });
 });
