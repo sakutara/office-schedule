@@ -25,6 +25,7 @@ export interface TranslationDictionary {
   btnCheckInDanger: string;
   btnCheckInDangerSub: string;
   btnMarkLeave: string;
+  btnMarkWork: string;
   todayMarkedOffice: string;
   todayMarkedLeave: string;
   todayMarkedWork: string;
@@ -108,6 +109,7 @@ const VI_DICT: TranslationDictionary = {
   btnCheckInDanger: 'Báo động: Thiếu ngày lên VP!',
   btnCheckInDangerSub: 'Số ngày làm việc còn lại trong tháng ít hơn số ngày bạn cần lên VP!',
   btnMarkLeave: 'Nghỉ phép',
+  btnMarkWork: 'Làm tại nhà',
   todayMarkedOffice: 'Đã đánh dấu: Lên văn phòng',
   todayMarkedLeave: 'Đã đánh dấu: Nghỉ phép',
   todayMarkedWork: 'Trạng thái: Làm việc từ xa',
@@ -189,6 +191,7 @@ const EN_DICT: TranslationDictionary = {
   btnCheckInDanger: 'Alert: Behind Office Target!',
   btnCheckInDangerSub: 'Remaining working days are fewer than your remaining required office days!',
   btnMarkLeave: 'Take Leave',
+  btnMarkWork: 'Work from home',
   todayMarkedOffice: 'Marked: At Office',
   todayMarkedLeave: 'Marked: On Leave',
   todayMarkedWork: 'Status: Remote Work',
