@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+if [[ "$CURRENT_BRANCH" == "main" ]]; then
+  echo "[after-merge hook] Merge into 'main' detected. Running production build into docs/..."
+  npm run build
+  echo "[after-merge hook] Production build successfully written to docs/."
+fi

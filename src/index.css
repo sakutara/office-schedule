@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Only allow text selection on editable fields or explicit copyable CTA items */
+  input,
+  textarea,
+  [contenteditable="true"],
+  [data-selectable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
