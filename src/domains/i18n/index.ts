@@ -58,6 +58,16 @@ export interface TranslationDictionary {
   infoWorkingDays: string;
   infoUpcomingOff: string;
   upcomingHolidaysTitle: string;
+  vpReminderTitle: string;
+  vpReminderDesc: string;
+  vpReminderOn: string;
+  vpReminderOff: string;
+  vpReminderBlocked: string;
+  vpReminderUnsupported: string;
+  vpReminderNotifTitle: string;
+  vpReminderBodyAtRisk: string;
+  vpReminderBodyPlanned: string;
+  vpReminderBodyPriority: string;
   noUpcomingOff: string;
   dayMon: string;
   dayTue: string;
@@ -120,6 +130,16 @@ const VI_DICT: TranslationDictionary = {
   infoWorkingDays: 'Tổng ngày làm việc',
   infoUpcomingOff: 'Lịch nghỉ sắp tới',
   upcomingHolidaysTitle: 'Nghỉ lễ sắp tới',
+  vpReminderTitle: 'Nhắc lên văn phòng',
+  vpReminderDesc: 'Nhận một thông báo lúc 7:00 mỗi ngày khi hôm nay có thể lên VP (ngày làm việc, dự kiến hoặc ưu tiên) hoặc có nguy cơ thiếu chỉ tiêu.',
+  vpReminderOn: 'Đang bật',
+  vpReminderOff: 'Bật nhắc lên VP',
+  vpReminderBlocked: 'Đã chặn thông báo trong cài đặt trình duyệt',
+  vpReminderUnsupported: 'Thiết bị/trình duyệt không hỗ trợ thông báo',
+  vpReminderNotifTitle: 'Office Tracker',
+  vpReminderBodyAtRisk: 'Nếu không lên VP liên tục từ hôm nay đến cuối tháng, bạn sẽ thiếu chỉ tiêu.',
+  vpReminderBodyPlanned: 'Hôm nay là ngày dự kiến lên văn phòng.',
+  vpReminderBodyPriority: 'Hôm nay là ngày ưu tiên lên văn phòng và bạn chưa đủ số ngày.',
   noUpcomingOff: 'Thời gian tới không có ngày nghỉ',
   dayMon: 'T2',
   dayTue: 'T3',
@@ -182,6 +202,16 @@ const EN_DICT: TranslationDictionary = {
   infoWorkingDays: 'Total working days',
   infoUpcomingOff: 'Upcoming days off',
   upcomingHolidaysTitle: 'Upcoming holidays',
+  vpReminderTitle: 'Office attendance reminder',
+  vpReminderDesc: 'Get one notification at 7:00 each day when you can go to the office today (planned or priority day) or your target is at risk.',
+  vpReminderOn: 'Enabled',
+  vpReminderOff: 'Enable reminder',
+  vpReminderBlocked: 'Notifications are blocked in browser settings',
+  vpReminderUnsupported: 'This device/browser does not support notifications',
+  vpReminderNotifTitle: 'Office Tracker',
+  vpReminderBodyAtRisk: 'If you do not go to the office every day from today to month end, you will miss your target.',
+  vpReminderBodyPlanned: 'Today is a planned office day.',
+  vpReminderBodyPriority: 'Today is a priority office day and your target is not yet met.',
   noUpcomingOff: 'No days off coming up',
   dayMon: 'Mon',
   dayTue: 'Tue',

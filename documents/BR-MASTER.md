@@ -71,6 +71,11 @@ Dự án tuân thủ nghiêm ngặt quy trình **Epic $\rightarrow$ BR (Business
 
 ---
 
+### 3.4 Trụ cột 4: Nhắc Lên Văn Phòng Hằng Ngày (EPIC-04)
+* Thông báo trình duyệt lúc 7:00 sáng, tối đa một lần mỗi ngày, chỉ khi hôm nay có thể lên VP (ngày làm việc chưa xác nhận hoặc ngày dự kiến) và có một trong các lý do: nguy cơ thiếu chỉ tiêu đến cuối tháng, ngày dự kiến, hoặc ngày ưu tiên chưa đủ số ngày. Bật/tắt trong Tab Cài đặt. Chi tiết: [BR-EPIC-04](epics/epic-04-vp-reminder-notifications/BR-EPIC-04.md), [ADR-004](adr/ADR-004-daily-vp-reminder-notifications.md).
+
+---
+
 ## 4. Yêu cầu Phi chức năng (Non-Functional Requirements)
 
 | Mã NFR | Hạng mục | Yêu cầu chi tiết |
@@ -93,3 +98,4 @@ Dự án tuân thủ nghiêm ngặt quy trình **Epic $\rightarrow$ BR (Business
 | **EPIC-01** | Hồ sơ Loại Nhân Viên, Cấu hình 7 Ngày & Bộ tính Ngày làm việc / Nghỉ lễ VN | Quản lý 2 hồ sơ mặc định (Nhân viên NAB 36%, Quản lý NAB 55%), tạo mới hồ sơ 5 thông tin, chỉnh 7 ngày trong tuần, truy vấn & cache 30 ngày lịch nghỉ lễ VN | [BR-EPIC-01](epics/epic-01-employee-profiles-and-schedule/BR-EPIC-01.md) / [SA-EPIC-01](epics/epic-01-employee-profiles-and-schedule/SA-EPIC-01.md) | **Đã triển khai** |
 | **EPIC-02** | Thanh Progress 3 Thông số & Tab Chính Đánh dấu Lên VP / Nghỉ phép | Thanh progress đầu trang (đầy đủ/thu gọn, 3 màu), nút Lên VP 4 trạng thái màu (xanh/xanh sẫm/cam/đỏ) và nút Nghỉ phép trắng | [BR-EPIC-02](epics/epic-02-attendance-and-progress-bar/BR-EPIC-02.md) / [SA-EPIC-02](epics/epic-02-attendance-and-progress-bar/SA-EPIC-02.md) | **Đã triển khai** |
 | **EPIC-03** | Lịch Tháng Tương Tác, Dropdown Đổi Trạng Thái & Kịch Bản Tương Lai | Xem lịch tháng với mã màu (xám/xanh/cam), khóa ngày nghỉ/lễ, dropdown đổi Làm/Lên VP/Nghỉ phép và lập kịch bản tương lai | [BR-EPIC-03](epics/epic-03-calendar-and-scenario-planning/BR-EPIC-03.md) / [SA-EPIC-03](epics/epic-03-calendar-and-scenario-planning/SA-EPIC-03.md) | **Đã triển khai** |
+| **EPIC-04** | Nhắc Lên Văn Phòng Hằng Ngày | Thông báo trình duyệt lúc 7:00 mỗi ngày (một lần) khi hôm nay có thể lên VP hoặc có nguy cơ thiếu chỉ tiêu; bật/tắt trong Cài đặt | [BR-EPIC-04](epics/epic-04-vp-reminder-notifications/BR-EPIC-04.md) / [SA-EPIC-04](epics/epic-04-vp-reminder-notifications/SA-EPIC-04.md) | **Đã triển khai** |

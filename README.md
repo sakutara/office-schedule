@@ -44,6 +44,10 @@
    * **Dropdown chỉnh trạng thái ngày**: Nhấn vào một ngày làm việc hợp lệ để mở dropdown chuyển đổi giữa **Làm (`work`) / Lên VP (`office`) / Nghỉ phép (`leave`)**. Khóa không cho phép đổi trạng thái của ngày nghỉ cuối tuần (`off`) hoặc ngày nghỉ lễ Việt Nam (`holiday`).
    * **Tính năng kịch bản tương lai**: Cho phép chọn các ngày làm việc trong tương lai làm ngày dự kiến lên văn phòng (trên lịch hoặc bộ chọn nhanh), tự động cộng vào dải **màu xanh lá nhạt** trên thanh progress.
 
+4. **Nhắc Lên Văn Phòng Hằng Ngày (`EPIC-04`)**:
+   * Thông báo trình duyệt **một lần mỗi ngày lúc 7:00 sáng**, chỉ khi hôm nay có thể lên VP (ngày làm việc chưa xác nhận hoặc ngày dự kiến) và có nguy cơ thiếu chỉ tiêu đến cuối tháng, là ngày dự kiến, hoặc là ngày ưu tiên chưa đủ số ngày. Nhiều lý do cùng lúc vẫn chỉ gửi một thông báo.
+   * Bật/tắt trong Tab **Cài đặt**. Thông báo chỉ hiện khi app còn đang chạy hoặc còn tồn tại trong nền (xem [ADR-004](./documents/adr/ADR-004-daily-vp-reminder-notifications.md)).
+
 ---
 
 ## 2. Lộ trình Epics & Hồ sơ Kiến trúc (SDD Documentation Map)
@@ -55,9 +59,11 @@
   * **EPIC-01**: [BR-EPIC-01](./documents/epics/epic-01-employee-profiles-and-schedule/BR-EPIC-01.md) | [SA-EPIC-01](./documents/epics/epic-01-employee-profiles-and-schedule/SA-EPIC-01.md) — *Hồ sơ Loại Nhân Viên, Cấu hình 7 Ngày & Bộ tính Ngày làm việc / Nghỉ lễ VN* (**Đã triển khai**).
   * **EPIC-02**: [BR-EPIC-02](./documents/epics/epic-02-attendance-and-progress-bar/BR-EPIC-02.md) | [SA-EPIC-02](./documents/epics/epic-02-attendance-and-progress-bar/SA-EPIC-02.md) — *Thanh Progress 3 Thông số & Tab Chính Đánh dấu Lên VP / Nghỉ phép* (**Đã triển khai**).
   * **EPIC-03**: [BR-EPIC-03](./documents/epics/epic-03-calendar-and-scenario-planning/BR-EPIC-03.md) | [SA-EPIC-03](./documents/epics/epic-03-calendar-and-scenario-planning/SA-EPIC-03.md) — *Lịch Tháng Tương Tác, Dropdown Đổi Trạng Thái & Kịch Bản Tương Lai* (**Đã triển khai**).
+  * **EPIC-04**: [BR-EPIC-04](./documents/epics/epic-04-vp-reminder-notifications/BR-EPIC-04.md) | [SA-EPIC-04](./documents/epics/epic-04-vp-reminder-notifications/SA-EPIC-04.md) — *Nhắc Lên Văn Phòng Hằng Ngày lúc 7:00 qua thông báo trình duyệt* (**Đã triển khai**).
 * **Hồ sơ Quyết định Kiến trúc (`documents/adr/`)**:
   * [ADR-001](./documents/adr/ADR-001-local-first-pwa-and-holiday-cache.md): Kiến trúc PWA Offline-First & Cơ chế Truy vấn / Cache 30 Ngày Lịch Nghỉ Lễ Việt Nam.
   * [ADR-002](./documents/adr/ADR-002-employee-profile-and-kpi-engine.md): Thiết kế Hồ sơ Loại Nhân Viên 5 Thông Tin, Lịch 7 Ngày & Máy Trạng Thái Cảnh Báo KPI.
+  * [ADR-004](./documents/adr/ADR-004-daily-vp-reminder-notifications.md): Nhắc lên VP hằng ngày bằng Notification API phía client thay vì Web Push có backend.
   * [ADR-003](./documents/adr/ADR-003-fluid-single-screen-ui-and-bottom-tabs.md): Giao diện Tối giản 1 Màn hình (`100dvh`), Thanh Progress 3 Màu & Điều hướng Swipe Bottom Tab.
 * **Skill Đóng gói Kèm Dự Án**:
   * [`documents/skills/sdd-tdd-pwa-webapp/SKILL.md`](./documents/skills/sdd-tdd-pwa-webapp/SKILL.md) (bản sao đồng bộ từ [`.agents/skills/sdd-tdd-pwa-webapp/SKILL.md`](./.agents/skills/sdd-tdd-pwa-webapp/SKILL.md)).
@@ -126,11 +132,13 @@ Epic Scope -> Business Requirement (BR) -> Solution Architecture (SA + ADR) -> A
 │   ├── adr/
 │   │   ├── ADR-001-local-first-pwa-and-holiday-cache.md
 │   │   ├── ADR-002-employee-profile-and-kpi-engine.md
-│   │   └── ADR-003-fluid-single-screen-ui-and-bottom-tabs.md
+│   │   ├── ADR-003-fluid-single-screen-ui-and-bottom-tabs.md
+│   │   └── ADR-004-daily-vp-reminder-notifications.md
 │   ├── epics/
 │   │   ├── epic-01-employee-profiles-and-schedule/
 │   │   ├── epic-02-attendance-and-progress-bar/
-│   │   └── epic-03-calendar-and-scenario-planning/
+│   │   ├── epic-03-calendar-and-scenario-planning/
+│   │   └── epic-04-vp-reminder-notifications/
 │   └── skills/sdd-tdd-pwa-webapp/              # Bản sao Skill đóng gói kèm tài liệu dự án
 ├── docs/                                       # Thư mục chứa bản build production tĩnh (tự động xuất từ npm run build)
 ├── src/

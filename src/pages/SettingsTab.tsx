@@ -13,6 +13,7 @@ import {
   cycleWeekdayState,
 } from '../domains/office/officeEngine';
 import type { LanguageCode, TranslationDictionary } from '../domains/i18n';
+import type { VpReminderStatus } from '../services/vpReminderService';
 
 interface SettingsTabProps {
   profiles: EmployeeProfile[];
@@ -20,6 +21,8 @@ interface SettingsTabProps {
   onSelectProfile: (profileId: string) => void;
   onCycleActiveWeekday: (weekday: WeekdayKey) => void;
   onCreateProfile: (newProfile: EmployeeProfile) => void;
+  vpReminderStatus: VpReminderStatus;
+  onToggleVpReminder: () => void;
   todayStr: string;
   language: LanguageCode;
   t: TranslationDictionary;
@@ -31,6 +34,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   onSelectProfile,
   onCycleActiveWeekday,
   onCreateProfile,
+  vpReminderStatus,
+  onToggleVpReminder,
   todayStr,
   language,
   t,
@@ -267,7 +272,37 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </ul>
       </section>
 
-      {/* 2. 7-Day Weekly Schedule Editor (Tap to cycle Gray -> Yellow -> Green) */}
+      {/* 2. Daily VP reminder (push notification at 07:00) */}
+      <section className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
+        <h3 className="text-xs font-bold text-slate-200 mb-1">{t.vpReminderTitle}</h3>
+        <p className="text-[11px] text-slate-400 mb-2">{t.vpReminderDesc}</p>
+        {vpReminderStatus === 'blocked' && (
+          <p data-testid="vp-reminder-blocked" className="text-[11px] text-amber-400 mb-2">
+            {t.vpReminderBlocked}
+          </p>
+        )}
+        {vpReminderStatus === 'unsupported' && (
+          <p data-testid="vp-reminder-unsupported" className="text-[11px] text-amber-400 mb-2">
+            {t.vpReminderUnsupported}
+          </p>
+        )}
+        <button
+          type="button"
+          data-testid="btn-toggle-vp-reminder"
+          aria-pressed={vpReminderStatus === 'on'}
+          disabled={vpReminderStatus === 'unsupported' || vpReminderStatus === 'blocked'}
+          onClick={onToggleVpReminder}
+          className={`w-full py-2.5 rounded-xl border text-xs font-bold transition-colors disabled:opacity-40 ${
+            vpReminderStatus === 'on'
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+          }`}
+        >
+          {vpReminderStatus === 'on' ? t.vpReminderOn : t.vpReminderOff}
+        </button>
+      </section>
+
+      {/* 3. 7-Day Weekly Schedule Editor (Tap to cycle Gray -> Yellow -> Green) */}
       <section className="mt-auto bg-slate-900/85 border border-slate-800 rounded-xl p-3">
         <h3 className="text-xs font-bold text-slate-200 mb-2">
           {t.weeklyEditorTitle}
