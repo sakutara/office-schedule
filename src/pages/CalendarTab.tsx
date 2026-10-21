@@ -254,7 +254,9 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   if (!cell.isEditable) return;
                   const current: EditableDayStatus = cell.isPlanned
                     ? 'planned'
-                    : (cell.effectiveState as EditableDayStatus);
+                    : cell.isRemoteConfirmed
+                      ? 'remote'
+                      : (cell.effectiveState as EditableDayStatus);
                   onSetDayStatus(
                     cell.dateStr,
                     cell.isLockdown
@@ -263,7 +265,7 @@ export const CalendarTab: React.FC<CalendarTabProps> = ({
                   );
                 }}
                 className={`h-11 rounded-lg border text-xs flex items-center justify-center transition-colors ${
-                  (cell.isPlanned || cell.isUpcoming) && cell.isEditable
+                  (cell.isPlanned || cell.isUpcoming) && cell.isEditable && !cell.isRemoteConfirmed
                     ? lightStyleMap[cell.color]
                     : colorStyleMap[cell.color]
                 } ${cell.isEditable ? '' : 'cursor-default'} ${

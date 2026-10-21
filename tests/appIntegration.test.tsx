@@ -173,6 +173,17 @@ describe('Full App UI Integration Tests (MainTab, CalendarTab, SettingsTab, TopP
     expect(screen.queryByTestId('active-profile-badge')).not.toBeInTheDocument();
   });
 
+  it('confirms work from home on the main tab and shows it as a status', async () => {
+    const user = userEvent.setup();
+    render(<App initialTodayStr="2026-10-21" />);
+    await user.click(screen.getByTestId('btn-mark-work'));
+    expect(screen.queryByTestId('btn-mark-work')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('btn-checkin-office')).not.toBeInTheDocument();
+    expect(screen.getByTestId('today-status-indicator')).toHaveAttribute('data-status', 'remote');
+    expect(screen.getByTestId('today-status-indicator')).toHaveTextContent('Hôm nay làm việc tại nhà');
+    expect(screen.getByTestId('info-panel')).toBeInTheDocument();
+  });
+
   it('manages office lockdown days in Settings: add (multi, no past), leave state, remove -> remote', async () => {
     const user = userEvent.setup();
     render(<App initialTodayStr="2026-10-21" />);

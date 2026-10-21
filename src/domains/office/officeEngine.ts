@@ -258,6 +258,7 @@ export function buildMonthCalendarDays(
         color: 'yellow',
         isEditable: true,
         isPlanned: false,
+        isRemoteConfirmed: override === 'remote',
         isUpcoming,
         isPriorityDay,
         isLockdown,
@@ -289,7 +290,7 @@ export function calculateMonthlyProgress(
 
   const remainingRequiredDays = Math.max(0, requiredOfficeDays - attendedOfficeDays);
   const remainingWorkingDaysInMonth = cells.filter(
-    (c) => c.isEditable && !c.isLockdown && c.dateStr >= todayStr && c.effectiveState !== 'leave' && !(c.dateStr === todayStr && c.effectiveState === 'office' && !c.isPlanned)
+    (c) => c.isEditable && !c.isLockdown && !c.isRemoteConfirmed && c.dateStr >= todayStr && c.effectiveState !== 'leave' && !(c.dateStr === todayStr && c.effectiveState === 'office' && !c.isPlanned)
   ).length;
 
   const [tYear, tMonth, tDay] = todayStr.split('-').map(Number);
@@ -335,6 +336,7 @@ export function planOfficeDays(
     (c) =>
       c.isEditable &&
       !c.isLockdown &&
+      !c.isRemoteConfirmed &&
       c.dateStr >= todayStr &&
       c.effectiveState !== 'leave' &&
       !(c.effectiveState === 'office' && !c.isPlanned)
@@ -366,6 +368,7 @@ export function cycleDayStatus(
   dateStr: string,
   todayStr: string
 ): EditableDayStatus {
+  if (current === 'remote') current = 'work'; // confirmed remote re-opens like an open remote day
   if (dateStr < todayStr) {
     return current === 'work' ? 'office' : current === 'office' ? 'leave' : 'work';
   }
