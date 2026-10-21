@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, CalendarOff, CalendarCheck, Sparkles, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Building2, Home, CalendarOff, CalendarCheck, Sparkles, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { getUpcomingWindowEnd } from '../domains/office/vietnamHolidays';
 import type {
   CalendarDayCell,
@@ -114,6 +114,18 @@ export const MainTab: React.FC<MainTabProps> = ({
             <span className="text-xs font-medium opacity-90 max-w-xs">
               {variantConfig.sub}
             </span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="btn-mark-work"
+            aria-label={t.btnMarkWork}
+            aria-pressed={todayStatus === 'work'}
+            onClick={() => onSetDayStatus(todayStr, 'work')}
+            className="w-full max-w-xs rounded-xl bg-amber-200 hover:bg-amber-100 text-slate-900 font-bold text-sm py-2.5 px-4 shadow border border-amber-100 flex items-center justify-center gap-2 transition-transform active:scale-98"
+          >
+            <Home className="w-4 h-4 text-slate-700" />
+            <span>{t.btnMarkWork}</span>
           </button>
 
           <button
