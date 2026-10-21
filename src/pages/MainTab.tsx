@@ -58,7 +58,19 @@ export const MainTab: React.FC<MainTabProps> = ({
   const MainIcon = variantConfig.Icon;
 
   // Buttons are shown while today is remote or planned-but-not-yet-confirmed.
-  const showButtons = todayStatus === undefined || todayStatus === 'work' || todayStatus === 'planned';
+  // Office lockdown: no actions at all, only the status (leave, or remote shown as "not in office").
+  const todayCell = monthCells.find((c) => c.dateStr === todayStr);
+  const isLockdownToday = !!todayCell?.isLockdown;
+  const showButtons =
+    !isLockdownToday &&
+    (todayStatus === undefined || todayStatus === 'work' || todayStatus === 'planned');
+
+  // On a lockdown day remote work is shown as a plain status (never an office check-in state).
+  const shownStatus: EditableDayStatus | undefined = isLockdownToday
+    ? todayCell?.effectiveState === 'leave'
+      ? 'leave'
+      : 'work'
+    : todayStatus;
 
   const upcomingOffDays = monthCells
     .filter(
@@ -117,17 +129,23 @@ export const MainTab: React.FC<MainTabProps> = ({
         <>
           <div
             data-testid="today-status-indicator"
-            data-status={todayStatus}
+            data-status={shownStatus}
             className={`w-full py-3 flex items-center justify-center gap-3 text-2xl font-extrabold ${
-              todayStatus === 'office' ? 'text-emerald-400' : 'text-slate-400'
+              shownStatus === 'office' ? 'text-emerald-400' : 'text-slate-400'
             }`}
           >
-            {todayStatus === 'office' ? (
+            {shownStatus === 'office' ? (
               <CalendarCheck className="w-8 h-8" />
             ) : (
               <CalendarOff className="w-8 h-8" />
             )}
-            <span>{todayStatus === 'office' ? t.todayIsOffice : t.todayIsLeave}</span>
+            <span>
+              {shownStatus === 'office'
+                ? t.todayIsOffice
+                : shownStatus === 'work'
+                  ? t.todayIsRemote
+                  : t.todayIsLeave}
+            </span>
           </div>
 
           <div

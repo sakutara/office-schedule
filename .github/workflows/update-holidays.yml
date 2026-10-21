@@ -1,0 +1,46 @@
+name: Update Vietnam holidays
+
+on:
+  schedule:
+    # Cron cannot express "last day of month": run on the 28th-31st and let the first step
+    # continue only when tomorrow is the 1st. 17:00 UTC = 00:00 the next day in Vietnam.
+    - cron: '0 17 28-31 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Only run on the last day of the month
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(date -u -d tomorrow +%d)" = "01" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      # No npm install needed: the script only uses Node built-ins (fetch, fs).
+      - name: Refresh public/holidays/vn.json
+        if: steps.gate.outputs.run == 'true'
+        run: node scripts/update-holidays.mjs
+
+      - name: Commit changes (or a keepalive so GitHub never disables the schedule)
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- public/holidays/vn.json; then
+            git commit --allow-empty -m "chore: holiday plan unchanged (keepalive)"
+          else
+            git add public/holidays/vn.json
+            git commit -m "chore: update Vietnam holiday plan"
+          fi
+          git push

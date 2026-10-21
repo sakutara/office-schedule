@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createDefaultProfiles,
   createDefaultWeeklySchedule,
@@ -14,8 +14,12 @@ import {
   getWeekdayKeyFromDate,
   planOfficeDays,
   cycleDayStatus,
+  HOLIDAY_SOURCE_VERSION,
+  addLockdownDates,
+  cycleLockdownDayStatus,
 } from '../src/domains/office/officeEngine';
-import { getBuiltInVietnamHolidays } from '../src/domains/office/vietnamHolidays';
+import { getBuiltInVietnamHolidays, setHolidayData } from '../src/domains/office/vietnamHolidays';
+import type { HolidayData } from '../src/domains/office/vietnamHolidays';
 import type { DayLogMap, MonthlyMeasurementCache } from '../src/domains/office/types';
 
 describe('EPIC-01: Employee Profiles, 7-Day Schedule & Holiday Working Day Measurement', () => {
@@ -64,6 +68,7 @@ describe('EPIC-01: Employee Profiles, 7-Day Schedule & Holiday Working Day Measu
       holidays: [],
       weeklyScheduleHash: hash,
       measuredAt: now - 10 * 24 * 60 * 60 * 1000, // 10 days ago
+      holidaySourceVersion: HOLIDAY_SOURCE_VERSION,
     };
 
     // Valid cache -> false
@@ -233,5 +238,51 @@ describe('planOfficeDays', () => {
     const c = buildMonthCalendarDays(2026, 10, profile, [], logs, '2026-10-21');
     expect(c.find((x) => x.dateStr === '2026-10-20')!.effectiveState).toBe('work');
     expect(c.find((x) => x.dateStr === '2026-10-21')!.isPlanned).toBe(true);
+  });
+});
+
+beforeAll(async () => {
+  const mod = await import('../public/holidays/vn.json');
+  setHolidayData(mod.default as HolidayData);
+});
+afterAll(() => setHolidayData(null));
+
+describe('Vietnam holiday source & office lockdown', () => {
+  it('reads 24/11 Culture Day from the external holiday file, not a hard-coded rule', () => {
+    expect(getBuiltInVietnamHolidays(2026).some((h) => h.date === '2026-11-24')).toBe(true);
+    expect(getBuiltInVietnamHolidays(2027).some((h) => h.date === '2027-11-24')).toBe(true);
+    expect(getBuiltInVietnamHolidays(2025).some((h) => h.date === '2025-11-24')).toBe(false);
+  });
+
+  it('forces re-measure of caches made with an older holiday source', () => {
+    const schedule = createDefaultWeeklySchedule();
+    const now = Date.now();
+    const old: MonthlyMeasurementCache = {
+      monthKey: '2026-11', workingDaysCount: 21, holidays: [],
+      weeklyScheduleHash: serializeWeeklySchedule(schedule), measuredAt: now,
+    };
+    expect(shouldRemeasureMonth(old, schedule, now)).toBe(true);
+  });
+
+  it('lockdown days can never be office/planned and are excluded from planning', () => {
+    const profile = createDefaultProfiles()[0];
+    const logs: DayLogMap = { '2026-10-26': 'office', '2026-10-27': 'planned' };
+    const lock = ['2026-10-26', '2026-10-27'];
+    const cells = buildMonthCalendarDays(2026, 10, profile, [], logs, '2026-10-21', lock);
+    const c26 = cells.find((c) => c.dateStr === '2026-10-26')!;
+    expect(c26.isLockdown).toBe(true);
+    expect(c26.effectiveState).toBe('work');
+    const plan = planOfficeDays(cells, 30, 0, 'start', '2026-10-21');
+    expect(plan['2026-10-26']).toBeUndefined();
+    expect(plan['2026-10-27']).toBeUndefined();
+  });
+
+  it('cycles lockdown days between leave and remote only, and rejects past dates', () => {
+    expect(cycleLockdownDayStatus('leave')).toBe('work');
+    expect(cycleLockdownDayStatus('work')).toBe('leave');
+    expect(addLockdownDates(['2026-12-24'], ['2026-12-23', '2026-10-01'], '2026-10-21')).toEqual([
+      '2026-12-23',
+      '2026-12-24',
+    ]);
   });
 });

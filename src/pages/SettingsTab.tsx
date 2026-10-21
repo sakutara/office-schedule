@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Minus, Check, ChevronDown } from 'lucide-react';
+import { Plus, Minus, Check, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import type {
   CalculationMethod,
   EmployeeProfile,
@@ -9,6 +9,8 @@ import type {
 import { WEEKDAY_ORDER } from '../domains/office/types';
 import { getBuiltInVietnamHolidays } from '../domains/office/vietnamHolidays';
 import {
+  formatDateStr,
+  getDaysInMonthCount,
   createDefaultWeeklySchedule,
   cycleWeekdayState,
 } from '../domains/office/officeEngine';
@@ -23,6 +25,9 @@ interface SettingsTabProps {
   onCreateProfile: (newProfile: EmployeeProfile) => void;
   vpReminderStatus: VpReminderStatus;
   onToggleVpReminder: () => void;
+  lockdownDates: string[];
+  onAddLockdownDates: (dates: string[]) => void;
+  onRemoveLockdownDate: (dateStr: string) => void;
   todayStr: string;
   language: LanguageCode;
   t: TranslationDictionary;
@@ -36,6 +41,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   onCreateProfile,
   vpReminderStatus,
   onToggleVpReminder,
+  lockdownDates,
+  onAddLockdownDates,
+  onRemoveLockdownDate,
   todayStr,
   language,
   t,
@@ -48,6 +56,32 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     createDefaultWeeklySchedule()
   );
   const [note, setNote] = useState('');
+
+  // Office lockdown date picker (multi-select, no past days)
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(Number(todayStr.slice(0, 4)));
+  const [pickerMonth, setPickerMonth] = useState(Number(todayStr.slice(5, 7)));
+  const [picked, setPicked] = useState<string[]>([]);
+
+  const shiftPickerMonth = (delta: number) => {
+    const d = new Date(pickerYear, pickerMonth - 1 + delta, 1);
+    setPickerYear(d.getFullYear());
+    setPickerMonth(d.getMonth() + 1);
+  };
+  const togglePicked = (dateStr: string) =>
+    setPicked((prev) =>
+      prev.includes(dateStr) ? prev.filter((d) => d !== dateStr) : [...prev, dateStr]
+    );
+  const closePicker = () => {
+    setPickerOpen(false);
+    setPicked([]);
+  };
+  const confirmPicked = () => {
+    onAddLockdownDates(picked);
+    closePicker();
+  };
+  const pickerLeadingBlanks = (new Date(pickerYear, pickerMonth - 1, 1).getDay() + 6) % 7; // Monday-first
+  const sortedLockdown = [...lockdownDates].sort();
 
   const weekdayLabels: Record<WeekdayKey, string> = {
     mon: t.dayMon,
@@ -270,6 +304,124 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Office lockdown: days the office is closed */}
+      <section data-testid="lockdown-section" className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xs font-bold text-slate-200">{t.lockdownTitle}</h3>
+          <button
+            type="button"
+            data-testid="btn-add-lockdown"
+            aria-label={t.lockdownAddBtn}
+            title={t.lockdownAddBtn}
+            onClick={() => (pickerOpen ? closePicker() : setPickerOpen(true))}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+          >
+            {pickerOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {pickerOpen && (
+          <div data-testid="lockdown-picker" className="mb-2 p-2 rounded-lg bg-slate-950 border border-slate-800">
+            <div className="flex items-center justify-between mb-1.5">
+              <button
+                type="button"
+                aria-label={t.lockdownPrevMonth}
+                data-testid="lockdown-prev-month"
+                onClick={() => shiftPickerMonth(-1)}
+                className="p-1 text-slate-300"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-semibold text-slate-100">
+                {String(pickerMonth).padStart(2, '0')}/{pickerYear}
+              </span>
+              <button
+                type="button"
+                aria-label={t.lockdownNextMonth}
+                data-testid="lockdown-next-month"
+                onClick={() => shiftPickerMonth(1)}
+                className="p-1 text-slate-300"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-500 mb-1">
+              {WEEKDAY_ORDER.map((k) => (
+                <span key={k}>{weekdayLabels[k]}</span>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: pickerLeadingBlanks }, (_, i) => (
+                <span key={`b${i}`} />
+              ))}
+              {Array.from({ length: getDaysInMonthCount(pickerYear, pickerMonth) }, (_, i) => {
+                const day = i + 1;
+                const dateStr = formatDateStr(pickerYear, pickerMonth, day);
+                const isPast = dateStr < todayStr;
+                const already = lockdownDates.includes(dateStr);
+                const isPicked = picked.includes(dateStr);
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    data-testid={`lockdown-pick-${dateStr}`}
+                    aria-pressed={isPicked}
+                    disabled={isPast || already}
+                    onClick={() => togglePicked(dateStr)}
+                    className={`h-8 rounded-md border text-[11px] disabled:opacity-30 ${
+                      isPicked
+                        ? 'bg-emerald-400 text-slate-950 font-bold border-emerald-300'
+                        : 'bg-slate-900 text-slate-200 border-slate-700'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-end gap-2 mt-2 text-xs">
+              <button type="button" onClick={closePicker} className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300">
+                {t.cancelBtn}
+              </button>
+              <button
+                type="button"
+                data-testid="btn-confirm-lockdown"
+                disabled={picked.length === 0}
+                onClick={confirmPicked}
+                className="px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold disabled:opacity-40"
+              >
+                {t.lockdownConfirmBtn}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sortedLockdown.length === 0 ? (
+          <div data-testid="lockdown-empty" className="text-xs text-slate-500">
+            {t.lockdownEmpty}
+          </div>
+        ) : (
+          <ul data-testid="lockdown-list" className="flex flex-col gap-1">
+            {sortedLockdown.map((d) => (
+              <li key={d} data-testid={`lockdown-item-${d}`} className="flex items-center justify-between text-xs">
+                <span className="text-slate-300">
+                  {t.lockdownDayLabel} {d.slice(8)}/{d.slice(5, 7)}
+                </span>
+                <button
+                  type="button"
+                  data-testid={`btn-remove-lockdown-${d}`}
+                  aria-label={`${t.lockdownRemoveBtn} ${d}`}
+                  onClick={() => onRemoveLockdownDate(d)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {/* 2. Daily VP reminder (push notification at 07:00) */}

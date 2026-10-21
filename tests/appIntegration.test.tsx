@@ -172,4 +172,55 @@ describe('Full App UI Integration Tests (MainTab, CalendarTab, SettingsTab, TopP
     await user.click(screen.getByTestId('tab-btn-main'));
     expect(screen.queryByTestId('active-profile-badge')).not.toBeInTheDocument();
   });
+
+  it('manages office lockdown days in Settings: add (multi, no past), leave state, remove -> remote', async () => {
+    const user = userEvent.setup();
+    render(<App initialTodayStr="2026-10-21" />);
+    await user.click(screen.getByTestId('tab-btn-settings'));
+
+    await user.click(screen.getByTestId('btn-add-lockdown'));
+    expect(screen.getByTestId('lockdown-pick-2026-10-20')).toBeDisabled();
+    await user.click(screen.getByTestId('lockdown-pick-2026-10-22'));
+    await user.click(screen.getByTestId('lockdown-pick-2026-10-23'));
+    await user.click(screen.getByTestId('btn-confirm-lockdown'));
+    expect(screen.getByTestId('lockdown-item-2026-10-22')).toHaveTextContent('22/10');
+    expect(screen.getByTestId('lockdown-item-2026-10-23')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('tab-btn-calendar'));
+    expect(screen.getByTestId('cal-day-2026-10-22')).toHaveAttribute('data-state', 'leave');
+    // Locked day toggles leave <-> remote only
+    await user.click(screen.getByTestId('cal-day-2026-10-22'));
+    expect(screen.getByTestId('cal-day-2026-10-22')).toHaveAttribute('data-state', 'work');
+    await user.click(screen.getByTestId('cal-day-2026-10-22'));
+    expect(screen.getByTestId('cal-day-2026-10-22')).toHaveAttribute('data-state', 'leave');
+
+    await user.click(screen.getByTestId('tab-btn-settings'));
+    await user.click(screen.getByTestId('btn-remove-lockdown-2026-10-22'));
+    expect(screen.queryByTestId('lockdown-item-2026-10-22')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('tab-btn-calendar'));
+    expect(screen.getByTestId('cal-day-2026-10-22')).toHaveAttribute('data-state', 'work');
+  });
+
+  it('shows only a status (no check-in/leave buttons) on a lockdown today, even when remote', async () => {
+    const user = userEvent.setup();
+    render(<App initialTodayStr="2026-10-21" />);
+    expect(screen.getByTestId('btn-checkin-office')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('tab-btn-settings'));
+    await user.click(screen.getByTestId('btn-add-lockdown'));
+    await user.click(screen.getByTestId('lockdown-pick-2026-10-21'));
+    await user.click(screen.getByTestId('btn-confirm-lockdown'));
+
+    await user.click(screen.getByTestId('tab-btn-main'));
+    expect(screen.queryByTestId('btn-checkin-office')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('btn-mark-leave')).not.toBeInTheDocument();
+    expect(screen.getByTestId('today-status-indicator')).toHaveAttribute('data-status', 'leave');
+
+    // Turn it into remote from the calendar: still status only
+    await user.click(screen.getByTestId('tab-btn-calendar'));
+    await user.click(screen.getByTestId('cal-day-2026-10-21'));
+    await user.click(screen.getByTestId('tab-btn-main'));
+    expect(screen.queryByTestId('btn-checkin-office')).not.toBeInTheDocument();
+    expect(screen.getByTestId('today-status-indicator')).toHaveAttribute('data-status', 'work');
+  });
 });

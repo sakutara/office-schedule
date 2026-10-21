@@ -52,6 +52,7 @@ export interface TranslationDictionary {
   todayMarkedPlanned: string;
   todayIsOffice: string;
   todayIsLeave: string;
+  todayIsRemote: string;
   infoAttended: string;
   infoPlanned: string;
   infoRequired: string;
@@ -69,6 +70,14 @@ export interface TranslationDictionary {
   vpReminderBodyPlanned: string;
   vpReminderBodyPriority: string;
   noUpcomingOff: string;
+  lockdownTitle: string;
+  lockdownAddBtn: string;
+  lockdownRemoveBtn: string;
+  lockdownDayLabel: string;
+  lockdownEmpty: string;
+  lockdownConfirmBtn: string;
+  lockdownPrevMonth: string;
+  lockdownNextMonth: string;
   dayMon: string;
   dayTue: string;
   dayWed: string;
@@ -124,6 +133,7 @@ const VI_DICT: TranslationDictionary = {
   todayMarkedPlanned: 'Dự kiến: Lên văn phòng',
   todayIsOffice: 'Hôm nay lên văn phòng',
   todayIsLeave: 'Hôm nay nghỉ phép',
+  todayIsRemote: 'Hôm nay làm việc tại nhà',
   infoAttended: 'Đã lên VP',
   infoPlanned: 'Còn dự kiến lên VP',
   infoRequired: 'Tổng ngày cần lên VP',
@@ -141,6 +151,14 @@ const VI_DICT: TranslationDictionary = {
   vpReminderBodyPlanned: 'Hôm nay là ngày dự kiến lên văn phòng.',
   vpReminderBodyPriority: 'Hôm nay là ngày ưu tiên lên văn phòng và bạn chưa đủ số ngày.',
   noUpcomingOff: 'Thời gian tới không có ngày nghỉ',
+  lockdownTitle: 'Office lockdown',
+  lockdownAddBtn: 'Thêm ngày lockdown',
+  lockdownRemoveBtn: 'Xoá ngày lockdown',
+  lockdownDayLabel: 'Ngày',
+  lockdownEmpty: 'Chưa có ngày lockdown nào',
+  lockdownConfirmBtn: 'Thêm',
+  lockdownPrevMonth: 'Tháng trước',
+  lockdownNextMonth: 'Tháng sau',
   dayMon: 'T2',
   dayTue: 'T3',
   dayWed: 'T4',
@@ -196,6 +214,7 @@ const EN_DICT: TranslationDictionary = {
   todayMarkedPlanned: 'Planned: Go to Office',
   todayIsOffice: 'In office today',
   todayIsLeave: 'On leave today',
+  todayIsRemote: 'Working from home today',
   infoAttended: 'Office days done',
   infoPlanned: 'Planned office days',
   infoRequired: 'Office days required',
@@ -213,6 +232,14 @@ const EN_DICT: TranslationDictionary = {
   vpReminderBodyPlanned: 'Today is a planned office day.',
   vpReminderBodyPriority: 'Today is a priority office day and your target is not yet met.',
   noUpcomingOff: 'No days off coming up',
+  lockdownTitle: 'Office lockdown',
+  lockdownAddBtn: 'Add lockdown days',
+  lockdownRemoveBtn: 'Remove lockdown day',
+  lockdownDayLabel: 'Day',
+  lockdownEmpty: 'No lockdown days yet',
+  lockdownConfirmBtn: 'Add',
+  lockdownPrevMonth: 'Previous month',
+  lockdownNextMonth: 'Next month',
   dayMon: 'Mon',
   dayTue: 'Tue',
   dayWed: 'Wed',
