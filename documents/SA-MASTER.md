@@ -46,6 +46,7 @@ flowchart TD
 | **Build & PWA (`docs/`)** | Vite (`build.outDir: 'docs'`) + `vite-plugin-pwa` | Đóng gói SPA và Service Worker chạy offline trực tiếp vào `docs/` ([ADR-001](adr/ADR-001-local-first-pwa-and-holiday-cache.md)). |
 | **Git Automation** | `.githooks/post-merge` (`after-merge`) | Tự động build production vào `docs/` ngay sau khi merge vào `main`. |
 | **Offline Storage** | `LocalStorage` thông qua `storageService.ts` | Lưu trữ bền vững hồ sơ nhân viên, trạng thái ngày (làm/lên VP/nghỉ phép/kịch bản) và bộ đệm ngày làm việc tháng ([ADR-001](adr/ADR-001-local-first-pwa-and-holiday-cache.md)). |
+| **Notifications (Nhắc lên VP)** | Notification API + `ServiceWorkerRegistration.showNotification()` (không có backend) | Nhắc 1 lần/ngày lúc 7:00 khi app đang chạy; không gửi khi app đã đóng hoàn toàn ([ADR-004](adr/ADR-004-daily-vp-reminder-notifications.md)). |
 | **Testing & Coverage** | Vitest + Testing Library + `@vitest/coverage-v8` | Cổng chặn coverage $\ge 90\%$. |
 
 ---
@@ -57,9 +58,11 @@ flowchart TD
    * `types.ts`: Định nghĩa cấu trúc dữ liệu `EmployeeProfile` (5 thông tin), `WeekdayConfig`, `DayStatus`, `MonthlyMeasurementCache`, `MonthlyProgressMetrics`, `MainButtonAlertState`.
    * `vietnamHolidays.ts`: Cơ sở dữ liệu ngày lễ Việt Nam (Dương lịch + Âm lịch quy đổi cho giai đoạn 2024–2030) đảm bảo tính toán chính xác cả khi không có mạng.
    * `officeEngine.ts`: Các hàm thuần tính toán số ngày làm việc trong tháng, kiểm tra hiệu lực cache 30 ngày, tính số ngày cần lên VP theo phương pháp tuần/tháng, tính toán thanh progress 3 màu và xác định trạng thái nút "Lên văn phòng" (Xanh lá / Xanh lá sẫm / Cam / Đỏ).
+   * `vpReminder.ts`: Điều kiện nhắc lên VP hằng ngày (`getVpReminderReasons`: nguy cơ chỉ tiêu, ngày dự kiến, ngày ưu tiên) và khung giờ 7:00 một lần/ngày (`isVpReminderDue`), dựa trên cùng phép tính với `officeEngine.ts` ([SA-EPIC-04](epics/epic-04-vp-reminder-notifications/SA-EPIC-04.md)).
 4. **`src/services/`**:
    * `storageService.ts`: Adapter đọc/ghi trạng thái ứng dụng vào `localStorage` an toàn với cơ chế khôi phục mặc định.
    * `holidayService.ts`: Truy vấn thông tin nghỉ lễ Việt Nam từ API công khai (`date.nager.at`) kết hợp bộ dữ liệu lịch lễ Việt Nam nội bộ, đảm bảo 100% chạy offline và tuân thủ quy tắc chỉ đo 1 lần mỗi tháng (đo lại khi mất, đổi lịch tuần, hoặc quá 30 ngày).
+   * `vpReminderService.ts`: Adapter trình duyệt cho quyền thông báo, trạng thái bật/tắt và mốc ngày đã đánh giá (`localStorage`), hiển thị thông báo qua service worker.
 5. **`src/components/` & `src/pages/`**:
    * `TopProgressBar.tsx`: Thanh tiến độ cố định trên cùng với 3 dải màu (Xanh lá đậm: đã lên, Xanh lá nhạt: kịch bản tương lai, Vàng: chỉ tiêu cần lên) hỗ trợ chế độ đầy đủ và thu gọn.
    * `MainTab.tsx`: Màn hình chính với nút "Lên văn phòng" biến thiên 4 cấp độ màu/thông điệp và nút "Nghỉ phép" màu trắng bên dưới, kèm công cụ chọn nhanh ngày kịch bản tương lai.
@@ -105,3 +108,4 @@ flowchart TD
 * [ADR-001: Kiến trúc PWA Offline-First & Cơ chế Truy vấn / Cache 30 Ngày Lịch Nghỉ Lễ Việt Nam](adr/ADR-001-local-first-pwa-and-holiday-cache.md)
 * [ADR-002: Thiết kế Hồ sơ Loại Nhân Viên 5 Thông Tin, Lịch 7 Ngày & Máy Trạng Thái Cảnh Báo KPI](adr/ADR-002-employee-profile-and-kpi-engine.md)
 * [ADR-003: Giao diện Tối giản 1 Màn hình (`100dvh`), Thanh Progress 3 Màu & Điều hướng Swipe Bottom Tab](adr/ADR-003-fluid-single-screen-ui-and-bottom-tabs.md)
+* [ADR-004: Nhắc Lên Văn Phòng Hằng Ngày Qua Thông Báo Trình Duyệt (Notification API) Thay Vì Web Push Có Backend](adr/ADR-004-daily-vp-reminder-notifications.md)

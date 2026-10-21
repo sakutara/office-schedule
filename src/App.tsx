@@ -20,11 +20,21 @@ import {
   formatMonthKey,
   shouldRemeasureMonth,
 } from './domains/office/officeEngine';
+import { getVpReminderReasons, isVpReminderDue } from './domains/office/vpReminder';
 import { loadAppState, saveAppState } from './services/storageService';
 import {
   buildInstantMonthMeasurement,
   ensureMonthMeasurement,
 } from './services/holidayService';
+import {
+  disableVpReminder,
+  enableVpReminder,
+  getLastEvaluatedDate,
+  getVpReminderStatus,
+  setLastEvaluatedDate,
+  showVpReminderNotification,
+  type VpReminderStatus,
+} from './services/vpReminderService';
 import logoUrl from './assets/logo.svg';
 import { TopProgressBar } from './components/TopProgressBar';
 import { MainTab } from './pages/MainTab';
@@ -111,6 +121,55 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
       cancelled = true;
     };
   }, [selectedYear, selectedMonth, activeProfile.weeklySchedule, state.monthlyCache]);
+
+  const [vpReminderStatus, setVpReminderStatus] = useState<VpReminderStatus>(() =>
+    getVpReminderStatus()
+  );
+
+  // Daily VP reminder: evaluated once per day from 07:00 while the app is running.
+  // Uses the current month (not the month being viewed) so it always reflects today's quota.
+  useEffect(() => {
+    const check = () => {
+      if (getVpReminderStatus() !== 'on') return;
+      const now = new Date();
+      if (!isVpReminderDue(now, todayStr, getLastEvaluatedDate())) return;
+      setLastEvaluatedDate(todayStr);
+
+      const [todayYear, todayMonth] = todayStr.split('-').map(Number);
+      const nowMs = now.getTime();
+      const cached = state.monthlyCache[formatMonthKey(todayYear, todayMonth)];
+      const measurement = shouldRemeasureMonth(cached, activeProfile.weeklySchedule, nowMs)
+        ? buildInstantMonthMeasurement(todayYear, todayMonth, activeProfile.weeklySchedule, nowMs)
+        : cached;
+
+      const reasons = getVpReminderReasons(activeProfile, measurement, state.dayLogs, todayStr);
+      if (reasons.length === 0) return;
+
+      const body =
+        reasons[0] === 'quota-at-risk'
+          ? t.vpReminderBodyAtRisk
+          : reasons[0] === 'planned-today'
+            ? t.vpReminderBodyPlanned
+            : t.vpReminderBodyPriority;
+      void showVpReminderNotification(t.vpReminderNotifTitle, body);
+    };
+
+    check();
+    const intervalId = window.setInterval(check, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [todayStr, state.dayLogs, state.monthlyCache, activeProfile, state.language]);
+
+  const handleToggleVpReminder = async () => {
+    const next = vpReminderStatus === 'on' ? disableVpReminder() : await enableVpReminder();
+    setVpReminderStatus(next);
+  };
 
   const monthCells = useMemo(
     () =>
@@ -346,6 +405,8 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
             onSelectProfile={handleSelectProfile}
             onCycleActiveWeekday={handleCycleActiveWeekday}
             onCreateProfile={handleCreateProfile}
+            vpReminderStatus={vpReminderStatus}
+            onToggleVpReminder={handleToggleVpReminder}
             todayStr={todayStr}
             language={state.language}
             t={t}
