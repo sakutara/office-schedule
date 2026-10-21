@@ -234,6 +234,17 @@ describe('planOfficeDays', () => {
     expect(cycleDayStatus('leave', '2026-10-26', today)).toBe('work');
   });
 
+  it('treats confirmed work-from-home as a yellow day that is not an office candidate', () => {
+    const logs: DayLogMap = { '2026-10-22': 'remote' };
+    const c = buildMonthCalendarDays(2026, 10, profile, [], logs, '2026-10-21');
+    const cell = c.find((x) => x.dateStr === '2026-10-22')!;
+    expect(cell.effectiveState).toBe('work');
+    expect(cell.color).toBe('yellow');
+    expect(cell.isRemoteConfirmed).toBe(true);
+    expect(planOfficeDays(c, 30, 0, 'start', '2026-10-21')).not.toHaveProperty('2026-10-22');
+    expect(cycleDayStatus('remote', '2026-10-22', '2026-10-21')).toBe('planned');
+  });
+
   it('turns unconfirmed planned days into remote once the day has passed', () => {
     const logs: DayLogMap = { '2026-10-20': 'planned', '2026-10-21': 'planned' };
     const c = buildMonthCalendarDays(2026, 10, profile, [], logs, '2026-10-21');

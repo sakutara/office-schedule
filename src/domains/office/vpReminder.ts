@@ -56,7 +56,7 @@ export function getVpReminderReasons(
 
   // Only remind on days that can actually go to the office: an editable day that is either
   // still open ('work') or planned. Weekends, holidays, leave and confirmed office days are silent.
-  const canGoToOffice = !!today && today.isEditable && !today.isLockdown && (today.effectiveState === 'work' || today.isPlanned);
+  const canGoToOffice = !!today && today.isEditable && !today.isLockdown && !today.isRemoteConfirmed && (today.effectiveState === 'work' || today.isPlanned);
   if (!today || !canGoToOffice) return [];
 
   const reasons: VpReminderReason[] = [];

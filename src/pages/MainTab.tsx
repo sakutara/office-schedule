@@ -120,8 +120,7 @@ export const MainTab: React.FC<MainTabProps> = ({
             type="button"
             data-testid="btn-mark-work"
             aria-label={t.btnMarkWork}
-            aria-pressed={todayStatus === 'work'}
-            onClick={() => onSetDayStatus(todayStr, 'work')}
+            onClick={() => onSetDayStatus(todayStr, 'remote')}
             className="w-full max-w-xs rounded-xl bg-amber-200 hover:bg-amber-100 text-slate-900 font-bold text-sm py-2.5 px-4 shadow border border-amber-100 flex items-center justify-center gap-2 transition-transform active:scale-98"
           >
             <Home className="w-4 h-4 text-slate-700" />
@@ -145,18 +144,24 @@ export const MainTab: React.FC<MainTabProps> = ({
             data-testid="today-status-indicator"
             data-status={shownStatus}
             className={`w-full py-3 flex items-center justify-center gap-3 text-2xl font-extrabold ${
-              shownStatus === 'office' ? 'text-emerald-400' : 'text-slate-400'
+              shownStatus === 'office'
+                ? 'text-emerald-400'
+                : shownStatus === 'remote'
+                  ? 'text-amber-200'
+                  : 'text-slate-400'
             }`}
           >
             {shownStatus === 'office' ? (
               <CalendarCheck className="w-8 h-8" />
+            ) : shownStatus === 'remote' ? (
+              <Home className="w-8 h-8" />
             ) : (
               <CalendarOff className="w-8 h-8" />
             )}
             <span>
               {shownStatus === 'office'
                 ? t.todayIsOffice
-                : shownStatus === 'work'
+                : shownStatus === 'work' || shownStatus === 'remote'
                   ? t.todayIsRemote
                   : t.todayIsLeave}
             </span>

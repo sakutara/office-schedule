@@ -46,8 +46,11 @@ export interface MonthlyMeasurementCache {
   holidaySourceVersion?: number; // bump HOLIDAY_SOURCE_VERSION to force re-measure
 }
 
-/** 'planned' = dự kiến lên VP; becomes remote ('work') once its day has passed unconfirmed. */
-export type EditableDayStatus = 'work' | 'planned' | 'office' | 'leave';
+/**
+ * 'work' = remote, not confirmed (default; can still go to the office); 'remote' = confirmed work from home.
+ * 'planned' = dự kiến lên VP; becomes remote ('work') once its day has passed unconfirmed.
+ */
+export type EditableDayStatus = 'work' | 'remote' | 'planned' | 'office' | 'leave';
 export type DayLogMap = Record<string, EditableDayStatus>;
 
 export type EffectiveDayState = 'off' | 'holiday' | 'leave' | 'work' | 'office';
@@ -62,6 +65,7 @@ export interface CalendarDayCell {
   isEditable: boolean;
   isPlanned: boolean;
   isUpcoming: boolean; // editable day after today
+  isRemoteConfirmed?: boolean; // work from home explicitly confirmed (not a candidate for the office)
   isLockdown?: boolean; // office closed: cannot be office/planned
   isPriorityDay: boolean;
   holidayNameVi?: string;
