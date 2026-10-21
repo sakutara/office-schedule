@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Minus, Check, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Minus, Check, Bell, BellOff, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import type {
   CalculationMethod,
   EmployeeProfile,
@@ -7,7 +7,7 @@ import type {
   WeekdaySettingState,
 } from '../domains/office/types';
 import { WEEKDAY_ORDER } from '../domains/office/types';
-import { getBuiltInVietnamHolidays } from '../domains/office/vietnamHolidays';
+import { getUpcomingHolidays } from '../domains/office/vietnamHolidays';
 import {
   formatDateStr,
   getDaysInMonthCount,
@@ -99,10 +99,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     office: 'bg-emerald-400 text-slate-950 font-bold border-emerald-300', // Màu xanh lá: ngày lên vp
   };
 
-  const upcomingHolidays = getBuiltInVietnamHolidays(Number(todayStr.slice(0, 4)))
-    .filter((h) => h.date >= todayStr)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 10);
+  const upcomingHolidays = getUpcomingHolidays(todayStr);
 
   const handleSaveNewProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,14 +122,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   return (
     <div
       data-testid="settings-tab"
-      className="flex-1 flex flex-col px-4 py-2.5 overflow-y-auto gap-2"
+      className="flex-1 min-h-0 flex flex-col px-4 py-2.5 overflow-y-auto gap-2"
     >
       {/* 1. Employee selector + compact "new" icon button */}
-      <section className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">
-          {t.profileSectionTitle}
-        </h2>
-
+      <section className="shrink-0 bg-slate-900/85 border border-slate-800 rounded-xl p-2">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <select
@@ -141,7 +134,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               aria-label={t.selectProfileLabel}
               value={activeProfile.id}
               onChange={(e) => onSelectProfile(e.target.value)}
-              className="w-full appearance-none rounded-xl bg-slate-950 border border-slate-700 hover:border-emerald-500/60 focus:border-emerald-400 focus:outline-none pl-3 pr-9 py-2.5 text-sm font-semibold text-slate-100"
+              className="w-full appearance-none rounded-xl bg-slate-950 border border-slate-700 hover:border-emerald-500/60 focus:border-emerald-400 focus:outline-none pl-3 pr-9 py-1.5 text-sm font-semibold text-slate-100"
             >
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -157,12 +150,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             aria-label={t.createNewProfileBtn}
             title={t.createNewProfileBtn}
             onClick={() => setShowNewForm((prev) => !prev)}
-            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
           >
             {showNewForm ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
           </button>
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-400 truncate">{activeProfile.note}</p>
 
         {/* Accordion: grid-rows animates 0fr <-> 1fr; collapsed form stays inert */}
         <div
@@ -285,30 +277,43 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </section>
 
-      <section className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
-        <h3 className="text-xs font-bold text-slate-200 mb-2">{t.upcomingHolidaysTitle}</h3>
-        {upcomingHolidays.length === 0 && (
-          <div data-testid="no-upcoming-holidays" className="text-xs text-slate-500">
-            {t.noUpcomingOff}
-          </div>
+      {/* Notifications: daily office reminder at 07:00 */}
+      <section className="shrink-0 bg-slate-900/85 border border-slate-800 rounded-xl px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-xs font-bold text-slate-200">{t.vpReminderTitle}</h3>
+          <button
+            type="button"
+            data-testid="btn-toggle-vp-reminder"
+            aria-pressed={vpReminderStatus === 'on'}
+            aria-label={vpReminderStatus === 'on' ? t.vpReminderOn : t.vpReminderOff}
+            title={vpReminderStatus === 'on' ? t.vpReminderOn : t.vpReminderOff}
+            disabled={vpReminderStatus === 'unsupported' || vpReminderStatus === 'blocked'}
+            onClick={onToggleVpReminder}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
+              vpReminderStatus === 'on'
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+          >
+            {vpReminderStatus === 'on' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-400 truncate">{t.vpReminderDesc}</p>
+        {vpReminderStatus === 'blocked' && (
+          <p data-testid="vp-reminder-blocked" className="text-[11px] text-amber-400 truncate">
+            {t.vpReminderBlocked}
+          </p>
         )}
-        <ul data-testid="upcoming-holidays" className="flex flex-col gap-1">
-          {upcomingHolidays.map((h) => (
-            <li key={h.date} className="flex items-center justify-between text-xs">
-              <span className="text-slate-300">
-                {h.date.slice(8)}/{h.date.slice(5, 7)}
-              </span>
-              <span className="text-slate-400 truncate ml-2">
-                {language === 'vi' ? h.nameVi : h.nameEn}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {vpReminderStatus === 'unsupported' && (
+          <p data-testid="vp-reminder-unsupported" className="text-[11px] text-amber-400 truncate">
+            {t.vpReminderUnsupported}
+          </p>
+        )}
       </section>
 
       {/* Office lockdown: days the office is closed */}
-      <section data-testid="lockdown-section" className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
-        <div className="flex items-center justify-between mb-1">
+      <section data-testid="lockdown-section" className="shrink-0 bg-slate-900/85 border border-slate-800 rounded-xl px-3 py-2">
+        <div className="flex items-center justify-between mb-1.5">
           <h3 className="text-xs font-bold text-slate-200">{t.lockdownTitle}</h3>
           <button
             type="button"
@@ -403,20 +408,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {t.lockdownEmpty}
           </div>
         ) : (
-          <ul data-testid="lockdown-list" className="flex flex-col gap-1">
+          <ul data-testid="lockdown-list" className="flex flex-wrap gap-1.5">
             {sortedLockdown.map((d) => (
-              <li key={d} data-testid={`lockdown-item-${d}`} className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">
-                  {t.lockdownDayLabel} {d.slice(8)}/{d.slice(5, 7)}
+              <li
+                key={d}
+                data-testid={`lockdown-item-${d}`}
+                className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-200"
+              >
+                <span>
+                  {d.slice(8)}/{d.slice(5, 7)}
                 </span>
                 <button
                   type="button"
                   data-testid={`btn-remove-lockdown-${d}`}
                   aria-label={`${t.lockdownRemoveBtn} ${d}`}
                   onClick={() => onRemoveLockdownDate(d)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700"
+                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-100 hover:bg-slate-700"
                 >
-                  <Minus className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </li>
             ))}
@@ -424,38 +433,30 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         )}
       </section>
 
-      {/* 2. Daily VP reminder (push notification at 07:00) */}
-      <section className="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
-        <h3 className="text-xs font-bold text-slate-200 mb-1">{t.vpReminderTitle}</h3>
-        <p className="text-[11px] text-slate-400 mb-2">{t.vpReminderDesc}</p>
-        {vpReminderStatus === 'blocked' && (
-          <p data-testid="vp-reminder-blocked" className="text-[11px] text-amber-400 mb-2">
-            {t.vpReminderBlocked}
-          </p>
+      {/* Upcoming holidays: next 2 months, max 10; only the list scrolls */}
+      <section className="min-h-0 flex-1 flex flex-col bg-slate-900/85 border border-slate-800 rounded-xl p-3">
+        <h3 className="shrink-0 text-xs font-bold text-slate-200 mb-2">{t.upcomingHolidaysTitle}</h3>
+        {upcomingHolidays.length === 0 && (
+          <div data-testid="no-upcoming-holidays" className="text-xs text-slate-500">
+            {t.noUpcomingOff}
+          </div>
         )}
-        {vpReminderStatus === 'unsupported' && (
-          <p data-testid="vp-reminder-unsupported" className="text-[11px] text-amber-400 mb-2">
-            {t.vpReminderUnsupported}
-          </p>
-        )}
-        <button
-          type="button"
-          data-testid="btn-toggle-vp-reminder"
-          aria-pressed={vpReminderStatus === 'on'}
-          disabled={vpReminderStatus === 'unsupported' || vpReminderStatus === 'blocked'}
-          onClick={onToggleVpReminder}
-          className={`w-full py-2.5 rounded-xl border text-xs font-bold transition-colors disabled:opacity-40 ${
-            vpReminderStatus === 'on'
-              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-          }`}
-        >
-          {vpReminderStatus === 'on' ? t.vpReminderOn : t.vpReminderOff}
-        </button>
+        <ul data-testid="upcoming-holidays" className="flex flex-col gap-1 min-h-0 overflow-y-auto">
+          {upcomingHolidays.map((h) => (
+            <li key={h.date} className="flex items-center justify-between text-xs">
+              <span className="text-slate-300">
+                {h.date.slice(8)}/{h.date.slice(5, 7)}
+              </span>
+              <span className="text-slate-400 truncate ml-2">
+                {language === 'vi' ? h.nameVi : h.nameEn}
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* 3. 7-Day Weekly Schedule Editor (Tap to cycle Gray -> Yellow -> Green) */}
-      <section className="mt-auto bg-slate-900/85 border border-slate-800 rounded-xl p-3">
+      <section className="shrink-0 bg-slate-900/85 border border-slate-800 rounded-xl p-3">
         <h3 className="text-xs font-bold text-slate-200 mb-2">
           {t.weeklyEditorTitle}
         </h3>
