@@ -10,6 +10,7 @@ import type {
   AppPersistedState,
   EditableDayStatus,
   EmployeeProfile,
+  HolidayItem,
   WeekdayKey,
 } from './domains/office/types';
 import {
@@ -19,8 +20,10 @@ import {
   cycleWeekdayState,
   formatDateStr,
   formatMonthKey,
+  listUpcomingOffDays,
   shouldRemeasureMonth,
 } from './domains/office/officeEngine';
+import { getBuiltInVietnamHolidays } from './domains/office/vietnamHolidays';
 import { getVpReminderReasons, isVpReminderDue } from './domains/office/vpReminder';
 import { loadAppState, saveAppState } from './services/storageService';
 import { applyStoredHolidayData, syncHolidayData } from './services/holidayDataService';
@@ -203,6 +206,23 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
       state.lockdownDates,
     ]
   );
+
+  const upcomingOffDays = useMemo(() => {
+    const holidays = new Map<string, HolidayItem>();
+    for (const y of [initYear, initYear + 1]) {
+      for (const h of getBuiltInVietnamHolidays(y)) holidays.set(h.date, h);
+    }
+    for (const entry of Object.values(state.monthlyCache)) {
+      for (const h of entry.holidays) holidays.set(h.date, h);
+    }
+    return listUpcomingOffDays(
+      todayStr,
+      activeProfile.weeklySchedule,
+      state.dayLogs,
+      state.lockdownDates,
+      Array.from(holidays.values())
+    );
+  }, [initYear, todayStr, activeProfile.weeklySchedule, state.dayLogs, state.lockdownDates, state.monthlyCache]);
 
   const metrics = useMemo(
     () =>
@@ -422,6 +442,7 @@ export const App: React.FC<AppProps> = ({ initialTodayStr }) => {
             todayStr={todayStr}
             metrics={metrics}
             monthCells={monthCells}
+            upcomingOffDays={upcomingOffDays}
             language={state.language}
             todayStatus={state.dayLogs[todayStr]}
             onSetDayStatus={handleSetDayStatus}

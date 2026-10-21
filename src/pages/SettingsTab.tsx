@@ -11,6 +11,7 @@ import { getBuiltInVietnamHolidays } from '../domains/office/vietnamHolidays';
 import {
   formatDateStr,
   getDaysInMonthCount,
+  getWeekdayKeyFromDate,
   createDefaultWeeklySchedule,
   cycleWeekdayState,
 } from '../domains/office/officeEngine';
@@ -81,6 +82,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     closePicker();
   };
   const pickerLeadingBlanks = (new Date(pickerYear, pickerMonth - 1, 1).getDay() + 6) % 7; // Monday-first
+  const pickerHolidayDates = new Set(getBuiltInVietnamHolidays(pickerYear).map((h) => h.date));
   const sortedLockdown = [...lockdownDates].sort();
 
   const weekdayLabels: Record<WeekdayKey, string> = {
@@ -361,19 +363,29 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 const dateStr = formatDateStr(pickerYear, pickerMonth, day);
                 const isPast = dateStr < todayStr;
                 const already = lockdownDates.includes(dateStr);
-                const isPicked = picked.includes(dateStr);
+                // Gray days (weekly off days, public holidays) are already closed: not selectable.
+                // Leave days stay selectable.
+                const isGrayDay =
+                  activeProfile.weeklySchedule[
+                    getWeekdayKeyFromDate(new Date(pickerYear, pickerMonth - 1, day))
+                  ] === 'off' || pickerHolidayDates.has(dateStr);
+                const isPicked = already || picked.includes(dateStr);
+                const blocked = isPast || isGrayDay;
                 return (
                   <button
                     key={dateStr}
                     type="button"
                     data-testid={`lockdown-pick-${dateStr}`}
                     aria-pressed={isPicked}
-                    disabled={isPast || already}
+                    data-selected={isPicked ? 'true' : 'false'}
+                    disabled={blocked || already}
                     onClick={() => togglePicked(dateStr)}
-                    className={`h-8 rounded-md border text-[11px] disabled:opacity-30 ${
-                      isPicked
-                        ? 'bg-emerald-400 text-slate-950 font-bold border-emerald-300'
-                        : 'bg-slate-900 text-slate-200 border-slate-700'
+                    className={`h-8 rounded-md border text-[11px] ${
+                      blocked
+                        ? 'bg-slate-800 text-slate-600 border-slate-800 opacity-50 cursor-not-allowed'
+                        : isPicked
+                          ? 'bg-slate-500 text-white font-bold border-slate-300' // gray: selected -> closed
+                          : 'bg-amber-200 text-slate-900 border-amber-100' // yellow: default (remote)
                     }`}
                   >
                     {day}

@@ -17,6 +17,7 @@ import {
   HOLIDAY_SOURCE_VERSION,
   addLockdownDates,
   cycleLockdownDayStatus,
+  listUpcomingOffDays,
 } from '../src/domains/office/officeEngine';
 import { getBuiltInVietnamHolidays, setHolidayData } from '../src/domains/office/vietnamHolidays';
 import type { HolidayData } from '../src/domains/office/vietnamHolidays';
@@ -283,6 +284,25 @@ describe('Vietnam holiday source & office lockdown', () => {
     expect(addLockdownDates(['2026-12-24'], ['2026-12-23', '2026-10-01'], '2026-10-21')).toEqual([
       '2026-12-23',
       '2026-12-24',
+    ]);
+  });
+});
+
+describe('listUpcomingOffDays', () => {
+  it('lists holidays, leave and lockdown days across months, one entry per date, past excluded', () => {
+    const schedule = createDefaultWeeklySchedule();
+    const list = listUpcomingOffDays(
+      '2026-10-21',
+      schedule,
+      { '2026-10-22': 'leave', '2026-10-24': 'leave', '2026-10-01': 'leave', '2026-11-24': 'leave' },
+      ['2026-12-23', '2026-12-24', '2026-10-01'],
+      [{ date: '2026-11-24', nameVi: 'Văn hoá', nameEn: 'Culture' }, { date: '2026-09-02', nameVi: 'x', nameEn: 'x' }]
+    );
+    expect(list.map((d) => `${d.date}:${d.kind}`)).toEqual([
+      '2026-10-22:leave', // Sat 10-24 leave ignored (weekly off), past 10-01 dropped
+      '2026-11-24:holiday', // holiday wins over leave
+      '2026-12-23:lockdown',
+      '2026-12-24:lockdown',
     ]);
   });
 });
